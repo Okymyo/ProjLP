@@ -55,11 +55,23 @@ mesma_linha(Posicao1, Posicao2):-
     linha(Posicao2, Linha2),
     Linha1 == Linha2.
  
-% Verificar se o movimento for direita ou esquerda se Posicao e Posicao+offset estao na mesma linha!
+% Verifica se um movimento J aplicado na peca Peca transforma CInicial em CFinal.
 mov_legal(CInicial, Jogada, Peca, CFinal):-
     peca(CInicial, Posicao, Peca),
     jogada(Jogada, Offset),
     Posicao1 is Posicao+Offset,
     peca(CInicial, Posicao1, Peca1),
     Peca1 = 0,
+    valida(Posicao, Posicao1, Offset),
     troca(CInicial, Peca, 0, CFinal).
+
+% Verifica se um movimento, que seja direita ou esquerda, nao muda de linha
+valida(PInicial, PFinal, Offset):-
+    (Offset == -1; Offset == 1),
+    tamanho(T),
+    A is (PInicial mod T) + Offset,
+	B is (PFinal mod T),
+	A == B.
+
+valida(_, _, Offset):-
+    (tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
