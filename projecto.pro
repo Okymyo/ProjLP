@@ -38,6 +38,13 @@ troca(CInicial, Peca1, Peca2, CFinal):-
 linha(Posicao, Linha):-
     tamanho(T),
     Linha is Posicao // T.
+    
+% Verifica se uma Posicao esta numa dada Coluna.
+% As Colunas comecam a contar do 0.
+% Pode-se fazer perguntas do genero de coluna(4, C). C=1
+coluna(Posicao, Coluna):-
+    tamanho(T),
+    Coluna is Posicao mod T.
  
 % Verifica se Posicao1 esta na mesma linha que a Posicao2.
 % Este predicado apenas verifica! Nao instancia nada! Nao podes fazer perguntas mesma_linha(1, P).
@@ -59,8 +66,8 @@ mov_legal(CInicial, Jogada, Peca, CFinal):-
 %   (Offset == -1; Offset == 1),
 %   tamanho(T),
 %   A is (PInicial mod T) + Offset,
-%	B is (PFinal mod T),
-%	A == B.
+%    B is (PFinal mod T),
+%    A == B.
 
 valida(PInicial, PFinal, Offset):-
     (Offset == 1; Offset == -1),
@@ -68,3 +75,67 @@ valida(PInicial, PFinal, Offset):-
 
 valida(_, _, Offset):-
     (tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
+    
+resolve_manual(CInicial, CFinal):-
+    imprime_transf(CInicial, CFinal).
+    
+    
+    
+    
+    
+    
+    
+    
+    
+imprime_transf(CInicial, CFinal):-
+    tamanho(T),
+    imprime_transf(CInicial, CFinal, 0, T).
+    
+imprime_transf(CInicial, CFinal, Linha, T):-
+    Linha < T,
+    Linha == 1,
+    Lin is Linha+1,
+    primeiros_N(CInicial, T, CInicial1, CInicial2),
+    primeiros_N(CFinal, T, CFinal1, CFinal2),
+    imprime_linha(CInicial1, 1, T),
+    write('\t->\t'),
+    imprime_linha(CFinal1, 1, T),
+    nl,
+    imprime_transf(CInicial2, CFinal2, Lin, T).
+    
+imprime_transf(CInicial, CFinal, Linha, T):-
+    Linha < T,
+    (Linha > 1; Linha < 1),
+    Lin is Linha+1,
+    primeiros_N(CInicial, T, CInicial1, CInicial2),
+    primeiros_N(CFinal, T, CFinal1, CFinal2),
+    imprime_linha(CInicial1, 1, T),
+    write('\t\t'),
+    imprime_linha(CFinal1, 1, T),
+    nl,
+    imprime_transf(CInicial2, CFinal2, Lin, T).
+    
+imprime_transf(_, _, Linha, T):-
+    Linha == T.
+    
+imprime_linha([Cabeca|Cauda], Contador, T):-
+    Contador < T,
+    Contador1 is Contador + 1,
+    write(Cabeca),
+    write('\t'),
+    imprime_linha(Cauda, Contador1, T).
+    
+imprime_linha([Cabeca|_], Contador, T):-
+    Contador == T,
+    write(Cabeca).
+    
+primeiros_N([Cabeca|Cauda], N, L1, L2):-
+    N > 1,
+    N1 is N - 1,
+    primeiros_N(Cauda, N1, Temp, L2),
+    append([Cabeca], Temp, L1).
+
+primeiros_N([Cabeca|Cauda], N, L1, L2):-
+    N == 1,
+    L1 = [Cabeca],
+    L2 = Cauda.
