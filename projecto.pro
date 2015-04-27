@@ -50,8 +50,7 @@ mov_legal(CInicial, Jogada, Peca, CFinal):-
     peca(CInicial, Posicao, Peca),
     jogada(Jogada, Offset),
     Posicao1 is Posicao+Offset,
-    peca(CInicial, Posicao1, Peca1),
-    Peca1 = 0,
+    peca(CInicial, Posicao1, 0),
     valida(Posicao, Posicao1, Offset),
     troca(CInicial, Peca, 0, CFinal).
 
