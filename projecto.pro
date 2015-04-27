@@ -36,24 +36,14 @@ troca(CInicial, Peca1, Peca2, CFinal):-
 % As Linhas comecam a contar do 0.
 % Podes fazer perguntas do genero linha(2, L). L=0.
 linha(Posicao, Linha):-
-    linha(Posicao, Linha, 0).
-linha(Posicao, Linha, Acc):-
-        tamanho(N),
-        Posicao >= Acc*N+0,
-    Posicao < Acc*N+N,
-    Linha is Acc.  
-linha(Posicao, Linha, Acc):-
-    tamanho(N),
-    Acc < N,
-    Acc1 is Acc+1,
-    linha(Posicao, Linha, Acc1).
+    tamanho(T),
+    Linha is Posicao // T.
  
 % Verifica se Posicao1 esta na mesma linha que a Posicao2.
 % Este predicado apenas verifica! Nao instancia nada! Nao podes fazer perguntas mesma_linha(1, P).
 mesma_linha(Posicao1, Posicao2):-
-    linha(Posicao1, Linha1),
-    linha(Posicao2, Linha2),
-    Linha1 == Linha2.
+    linha(Posicao1, Linha),
+    linha(Posicao2, Linha).
  
 % Verifica se um movimento J aplicado na peca Peca transforma CInicial em CFinal.
 mov_legal(CInicial, Jogada, Peca, CFinal):-
@@ -66,12 +56,16 @@ mov_legal(CInicial, Jogada, Peca, CFinal):-
     troca(CInicial, Peca, 0, CFinal).
 
 % Verifica se um movimento, que seja direita ou esquerda, nao muda de linha
+%valida(PInicial, PFinal, Offset):-
+%   (Offset == -1; Offset == 1),
+%   tamanho(T),
+%   A is (PInicial mod T) + Offset,
+%	B is (PFinal mod T),
+%	A == B.
+
 valida(PInicial, PFinal, Offset):-
-    (Offset == -1; Offset == 1),
-    tamanho(T),
-    A is (PInicial mod T) + Offset,
-	B is (PFinal mod T),
-	A == B.
+    (Offset == 1; Offset == -1),
+    mesma_linha(PInicial, PFinal).
 
 valida(_, _, Offset):-
     (tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
