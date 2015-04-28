@@ -77,15 +77,27 @@ valida(_, _, Offset):-
     (tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
     
 resolve_manual(CInicial, CFinal):-
-    imprime_transf(CInicial, CFinal).
+    imprime_transf(CInicial, CFinal),
+	read(M),
+	resolve_manual(CInicial, CFinal, M).
+	
+resolve_manual(CInicial, CFinal, M):-
+	mov_legal(CInicial, M, _, Resultado),
+	Resultado \= CFinal,
+	imprime_transf(CInicial, Resultado),
+	read(M2),
+	resolve_manual(Resultado, CFinal, M2).
+	
+resolve_manual(CInicial, CFinal, M):-
+	mov_legal(CInicial, M, _, Resultado),
+	Resultado = CFinal,
+	write('DING DING DING').
     
-    
-    
-    
-    
-    
-    
-    
+resolve_manual(CInicial, CFinal, M):-
+	not(mov_legal(CInicial, M, _, Resultado)),
+	imprime_transf(CInicial, CInicial),
+	read(M2),
+	resolve_manual(CInicial, CFinal, M2).
     
 imprime_transf(CInicial, CFinal):-
     tamanho(T),
