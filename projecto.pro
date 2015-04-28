@@ -1,5 +1,10 @@
+vazio([]).
+
 % Tamanho do nosso tabuleiro.
 tamanho(3).
+
+% Ordem da procura cega.
+ordem_cega([c, e, b, d]).
  
 % Jogadas e os seus offsets.
 jogada(e, -1).
@@ -98,10 +103,53 @@ resolve_manual(CInicial, CFinal, M):-
 	imprime_transf(CInicial, CInicial),
 	read(M2),
 	resolve_manual(CInicial, CFinal, M2).
+	
+% Procura cega!
+resolve_cego(CInicial, CFinal):-
+	imprime_transf(CInicial, CFinal),
+	ordem_cega(OC),
+	resolve_cego(CInicial, CFinal, OC, []).
+	
+resolve_cego(CInicial, CFinal, [M|_], Anteriores):-
+	mov_legal(CInicial, M, _, Resultado),
+	Resultado \= CFinal,
+	not(na_lista(Anteriores, Resultado)),
+	append([Resultado], Anteriores, Anteriores2),
+	imprime_transf(CInicial, Resultado),
+	ordem_cega(OC),
+	resolve_cego(Resultado, CFinal, OC, Anteriores2).
+	
+resolve_cego(CInicial, CFinal, [M|_], _):-
+	mov_legal(CInicial, M, _, Resultado),
+	Resultado == CFinal,
+	write('DING DING DING').
+	
+resolve_cego(CInicial, CFinal, [M|Restantes], Anteriores):-
+	(not(mov_legal(CInicial, M, _, Resultado)); mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado)),
+	not(na_lista(Anteriores, Resultado)),
+	resolve_cego(CInicial, CFinal, Restantes, Anteriores).
 
+na_lista([Cabeca|Cauda], Item):-
+	not(vazio(Cauda)),
+	Cabeca == Item.
+	
+na_lista([Cabeca|Cauda], Item):-
+	not(vazio(Cauda)),
+	not(Cabeca == Item),
+	na_lista(Cauda, Item).
+	
+na_lista([Cabeca|Cauda], Item):-
+	vazio(Cauda),
+	Cabeca == Item.	
+	
+	
+	
+	
+	
 imprime_transf(CInicial, CFinal):-
 	tamanho(T),
-	imprime_transf(CInicial, CFinal, 0, T).
+	imprime_transf(CInicial, CFinal, 0, T),
+	nl.
 	
 imprime_transf(CInicial, CFinal, Linha, T):-
 	Linha < T,
