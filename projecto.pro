@@ -127,7 +127,7 @@ resolve_cego(CInicial, CFinal, [M|_], _):-
 	write('DING DING DING').
 	
 resolve_cego(CInicial, CFinal, [M|Restantes], Anteriores):-
-	((not(mov_legal(CInicial, M, _, Resultado))); (mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado))),
+	%((not(mov_legal(CInicial, M, _, Resultado))); (mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado))),
 	write(Restantes),
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores).
 
