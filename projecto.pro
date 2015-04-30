@@ -4,7 +4,7 @@ vazio([]).
 tamanho(3).
 
 % Ordem da procura cega.
-ordem_cega([c, e, b, d]).
+ordem_cega([b, d, c, e]).
  
 % Jogadas e os seus offsets.
 jogada(e, -1).
@@ -96,6 +96,7 @@ resolve_manual(CInicial, CFinal, M):-
 resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado = CFinal,
+	imprime_transf(CInicial, Resultado),
 	write('DING DING DING').
 	
 resolve_manual(CInicial, CFinal, M):-
@@ -112,7 +113,7 @@ resolve_cego(CInicial, CFinal):-
 	
 resolve_cego(CInicial, CFinal, [M|_], Anteriores):-
 	mov_legal(CInicial, M, _, Resultado),
-	Resultado \= CFinal,
+	not(Resultado == CFinal),
 	not(na_lista(Anteriores, Resultado)),
 	append([Resultado], Anteriores, Anteriores2),
 	imprime_transf(CInicial, Resultado),
@@ -122,11 +123,12 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores):-
 resolve_cego(CInicial, CFinal, [M|_], _):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado == CFinal,
+	imprime_transf(CInicial, Resultado),
 	write('DING DING DING').
 	
 resolve_cego(CInicial, CFinal, [M|Restantes], Anteriores):-
-	(not(mov_legal(CInicial, M, _, Resultado)); mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado)),
-	not(na_lista(Anteriores, Resultado)),
+	((not(mov_legal(CInicial, M, _, Resultado))); (mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado))),
+	write(Restantes),
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores).
 
 na_lista([Cabeca|Cauda], Item):-
@@ -158,7 +160,7 @@ imprime_transf(CInicial, CFinal, Linha, T):-
 	primeiros_N(CInicial, T, CInicial1, CInicial2),
 	primeiros_N(CFinal, T, CFinal1, CFinal2),
 	imprime_linha(CInicial1, 1, T),
-	write('\t->\t'),
+	write(' -> '),
 	imprime_linha(CFinal1, 1, T),
 	nl,
 	imprime_transf(CInicial2, CFinal2, Lin, T).
@@ -170,7 +172,7 @@ imprime_transf(CInicial, CFinal, Linha, T):-
 	primeiros_N(CInicial, T, CInicial1, CInicial2),
 	primeiros_N(CFinal, T, CFinal1, CFinal2),
 	imprime_linha(CInicial1, 1, T),
-	write('\t\t'),
+	write('    '),
 	imprime_linha(CFinal1, 1, T),
 	nl,
 	imprime_transf(CInicial2, CFinal2, Lin, T).
@@ -182,7 +184,7 @@ imprime_linha([Cabeca|Cauda], Contador, T):-
 	Contador < T,
 	Contador1 is Contador + 1,
 	write(Cabeca),
-	write('\t'),
+	write(' '),
 	imprime_linha(Cauda, Contador1, T).
 	
 imprime_linha([Cabeca|_], Contador, T):-
