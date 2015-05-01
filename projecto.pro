@@ -129,25 +129,36 @@ resolve_cego(CInicial, CFinal):-
 	resolve_cego(CInicial, CFinal, Ordem, [], [], Solucao),
 	imprime_passos(Solucao).
 	
+resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
+	CInicial == CFinal,
+	Solucao = Movimentos.
+	
 resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	mov_legal(CInicial, M, Peca, Resultado),
-	not(Resultado == CFinal),
 	not(na_lista(Anteriores, Resultado)),
 	append([Resultado], Anteriores, Anteriores2),
 	ordem(Ordem),
 	append(Movimentos, [[Peca, M]], Temp),
 	resolve_cego(Resultado, CFinal, Ordem, Anteriores2, Temp, Solucao).
 	
-resolve_cego(CInicial, CFinal, [M|_], _, Movimentos, Solucao):-
-	mov_legal(CInicial, M, Peca, Resultado),
-	Resultado == CFinal,
-	append(Movimentos, [[Peca, M]], Solucao).
-	
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
 	
 % Procura informada utilizando distancia de Manhattan!
-resolve_info_m(CInicial, CFinal).
+resolve_info_m(CInicial, CFinal):-
+	imprime_transf(CInicial, CFinal),
+	resolve_info_m(CInicial, CFinal, [], Solucao),
+	imprime_passos(Solucao).
+	
+resolve_info_m(CInicial, CFinal, Movimentos, Solucao):-
+	CInicial == CFinal,
+	Solucao = Movimentos.
+	
+resolve_info_m(CInicial, CFinal, Movimentos, Solucao):-
+	melhor_movimento(CInicial, CFinal, Peca, Movimento),
+	mov_legal(CInicial, Movimento, Peca, Resultado),
+	append(Movimentos, [[Peca, Movimento]], Temp),
+	resolve_info_m(Resultado, CFinal, Temp, Solucao).
 
 % Calcula a distancia de Manhattan entre duas configuracoes.
 dist_manhattan(CInicial, CFinal, Distancia):- dist_manhattan(CInicial, CFinal, CInicial, 0, Distancia).
@@ -161,6 +172,17 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	linha(PFinal, LinhaF),
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
+	
+melhor_movimento(CInicial, CFinal, Peca, Movimento):- ordem(Ordem), melhor_movimento(CInicial, CFinal, Ordem, 'peca', 'movimento', 666, Peca, Movimento).
+melhor_movimento(_, _, [], MelhorPecaTemp, MelhorMovTemp, _,  MelhorPecaTemp, MelhorMovTemp).
+melhor_movimento(CInicial, CFinal, [M|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
+	mov_legal(CInicial, M, P, Temp),
+	dist_manhattan(Temp, CFinal, Distancia),
+	Distancia < DistTemp,
+	melhor_movimento(CInicial, CFinal, Restantes, P, M, Distancia, Peca, Movimento).
+	
+melhor_movimento(CInicial, CFinal, [_|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
+	melhor_movimento(CInicial, CFinal, Restantes, MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento).
 	
 % Imprime os passos realizados, por ordem.
 imprime_passos([]):- write('.').
@@ -222,8 +244,7 @@ imprime_lista([Cabeca|Cauda], Contador, T):-
 	imprime_lista(Cauda, Contador1, T).
 
 % Escreve o digito dado, substituindo 0 por um espaco
-escreve_digito(0):-	write(' ').
-escreve_digito(N):-	write(N).
+escreve_digito(N):- N \== 0 -> write( N) ; write(' ').
 
 % Devolve em L1 os primeiros N elementos da lista, em L2 os restantes.
 separa_N([Cabeca|Cauda], 1, [Cabeca], Cauda).
