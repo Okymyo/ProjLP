@@ -4,7 +4,7 @@ vazio([]).
 tamanho(3).
 
 % Ordem da procura cega.
-ordem_cega([b, d, c, e]).
+ordem([b, d, c, e]).
  
 % Jogadas e os seus offsets.
 jogada(e, -1).
@@ -125,8 +125,8 @@ pede_input(M):-
 % 5. Restaurar lista de movimentos ao estado inicial, e correr com a nova configuracao
 resolve_cego(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
-	ordem_cega(OC),
-	resolve_cego(CInicial, CFinal, OC, [], [], Solucao),
+	ordem(Ordem),
+	resolve_cego(CInicial, CFinal, Ordem, [], [], Solucao),
 	imprime_passos(Solucao).
 	
 resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
@@ -134,9 +134,9 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	not(Resultado == CFinal),
 	not(na_lista(Anteriores, Resultado)),
 	append([Resultado], Anteriores, Anteriores2),
-	ordem_cega(OC),
+	ordem(Ordem),
 	append(Movimentos, [[Peca, M]], Temp),
-	resolve_cego(Resultado, CFinal, OC, Anteriores2, Temp, Solucao).
+	resolve_cego(Resultado, CFinal, Ordem, Anteriores2, Temp, Solucao).
 	
 resolve_cego(CInicial, CFinal, [M|_], _, Movimentos, Solucao):-
 	mov_legal(CInicial, M, Peca, Resultado),
@@ -145,6 +145,22 @@ resolve_cego(CInicial, CFinal, [M|_], _, Movimentos, Solucao):-
 	
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
+	
+% Procura informada utilizando distancia de Manhattan!
+resolve_info_m(CInicial, CFinal).
+
+% Calcula a distancia de Manhattan entre duas configuracoes.
+dist_manhattan(CInicial, CFinal, Distancia):- dist_manhattan(CInicial, CFinal, CInicial, 0, Distancia).
+dist_manhattan(_, _, [], Soma, Soma).
+dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
+	peca(CInicial, PInicial, Peca),
+	peca(CFinal, PFinal, Peca),
+	coluna(PInicial, ColunaI),
+	linha(PInicial, LinhaI),
+	coluna(PFinal, ColunaF),
+	linha(PFinal, LinhaF),
+	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
+	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
 	
 % Imprime os passos realizados, por ordem.
 imprime_passos([]):- write('.').
