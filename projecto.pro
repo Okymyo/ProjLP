@@ -1,5 +1,3 @@
-vazio([]).
-
 % Tamanho do nosso tabuleiro.
 tamanho(3).
 
@@ -76,7 +74,6 @@ valida(PInicial, PFinal, Offset):-
 valida(_, _, Offset):-
 	(tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
 	
-	
 % Resolucao manual:
 % 1. Pedir input ao utilizador
 % 2. Verificar se input e um movimento legal
@@ -86,6 +83,7 @@ valida(_, _, Offset):-
 % 4. Correr com a nova configuracao
 resolve_manual(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
+	!,
 	pede_input(M),
 	resolve_manual(CInicial, CFinal, M).
 	
@@ -125,6 +123,7 @@ pede_input(M):-
 % 5. Restaurar lista de movimentos ao estado inicial, e correr com a nova configuracao
 resolve_cego(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
+	!,
 	ordem(Ordem),
 	resolve_cego(CInicial, CFinal, Ordem, [], [], Solucao),
 	imprime_passos(Solucao).
@@ -144,25 +143,82 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
 	
-% Procura informada utilizando distancia de Manhattan!
-resolve_info_m(CInicial, CFinal):-
+% Procura informada utilizando A* e distancia de Manhattan!
+resolve_info_m(CInicial, CFinal, NoInicial):-
 	imprime_transf(CInicial, CFinal),
-	resolve_info_m(CInicial, CFinal, [], Solucao),
-	imprime_passos(Solucao).
+	!,
+	M = [],
+	dist_manhattan(CInicial, CFinal, H),
+	numero_elementos(M, G),
+	F is G + H,
+	no(CInicial, F, G, H, M, NoInicial),
+	resolve_info_m(CFinal, [NoInicial], [], Solucao),
+	open('output.txt', write, Stream),
+	imprime_passos(Solucao, Stream),
+	close(Stream).
 	
-resolve_info_m(CInicial, CFinal, Movimentos, Solucao):-
+resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
+	menor_F(Abertos, Indice),
+	elemento_N(Abertos, Indice, No),
+	remove_N(Abertos, Indice, Abertos1),
+	Fechados1 = [No|Fechados],
+	expande_no(No, Abertos1, Fechados1, Solucao).
+
+expande_no([C, F, G, H, M], Abertos, Fechados, C, M).
+expande_no([C, F, G, H, M], Abertos, Fechados, CFinal, Solucao).
+
+sucessores([C, _, G, _, M], CFinal, Sucessores):-
+	ordem(Ordem),
+	sucessores([C, _, G, _, M], CFinal, Sucessores, Ordem).
+	
+sucessores(_, _, [], []).
+sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
+	mov_legal(C, Mov, Peca, Resultado),
+	G1 is G + 1,
+	dist_manhattan(Resultado, CFinal, H),
+	F is G1 + H,
+	no(Resultado, F, G, H, [Mov|M], No),
+	sucessores([C, '', G, '', M], CFinal, Temp, Restantes),
+	Sucessores = [No|Temp].
+	
+sucessores([C, _, G, _, M], CFinal, Sucessores, [_|Restantes]):-
+	sucessores([C, '', G, '', M], CFinal, Sucessores, Restantes).
+
+menor_F(Abertos, Indice):- menor_F(Abertos, 0, _, Indice).
+menor_F([Cabeca|[]], Actual, F, Actual):- no(_, F, _, _, _, Cabeca).
+menor_F([Cabeca|Cauda], Actual, F, Indice):-
+	Prox is Actual + 1,
+	menor_F(Cauda, Prox, F_Temp, I_Temp),
+	no(_, F_Actual, _, _, _, Cabeca),
+	(F_Actual =< F_Temp -> (F = F_Actual, Indice = Actual); (F = F_Temp, Indice = I_Temp)).
+
+
+% Verifica se uma dada configuracao, com f(C) = F, g(C) = G, h(C) = H, e movimentos ate C, gera um determinado no.
+no(C, F, G, H, M, [C, F, G, H, M]).
+	
+/*resolve_info_m(CInicial, CFinal):-
+	imprime_transf(CInicial, CFinal),
+	!,
+	resolve_info_m(CInicial, CFinal, [], [], Solucao),
+	open('output2.txt', write, Stream),
+	imprime_passos(Solucao, Stream),
+	close(Stream).
+	
+resolve_info_m(CInicial, CFinal, _, Movimentos, Solucao):-
 	CInicial == CFinal,
 	Solucao = Movimentos.
 	
-resolve_info_m(CInicial, CFinal, Movimentos, Solucao):-
-	melhor_movimento(CInicial, CFinal, Peca, Movimento),
+resolve_info_m(CInicial, CFinal, Anteriores, Movimentos, Solucao):-
+	melhor_movimento(CInicial, CFinal, Anteriores, Peca, Movimento),
 	mov_legal(CInicial, Movimento, Peca, Resultado),
 	append(Movimentos, [[Peca, Movimento]], Temp),
-	resolve_info_m(Resultado, CFinal, Temp, Solucao).
+	append([Resultado], Anteriores, Anteriores2),
+	resolve_info_m(Resultado, CFinal, Anteriores2, Temp, Solucao).*/
 
 % Calcula a distancia de Manhattan entre duas configuracoes.
 dist_manhattan(CInicial, CFinal, Distancia):- dist_manhattan(CInicial, CFinal, CInicial, 0, Distancia).
 dist_manhattan(_, _, [], Soma, Soma).
+dist_manhattan(CInicial, CFinal, [0|Pecas], Soma, Distancia):- dist_manhattan(CInicial, CFinal, Pecas, Soma, Distancia).
 dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	peca(CInicial, PInicial, Peca),
 	peca(CFinal, PFinal, Peca),
@@ -172,28 +228,35 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	linha(PFinal, LinhaF),
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
+
+/*% Calcula o melhor movimento a realizar
+melhor_movimento(CInicial, CFinal, Anteriores, Peca, Movimento):-
+	ordem(Ordem),
+	dist_manhattan(CInicial, CFinal, Distancia),
+	melhor_movimento(CInicial, CFinal, Anteriores, Ordem, 'sem_peca', 'sem_movimento', Distancia, Peca, Movimento).
 	
-melhor_movimento(CInicial, CFinal, Peca, Movimento):- ordem(Ordem), melhor_movimento(CInicial, CFinal, Ordem, 'peca', 'movimento', 666, Peca, Movimento).
-melhor_movimento(_, _, [], MelhorPecaTemp, MelhorMovTemp, _,  MelhorPecaTemp, MelhorMovTemp).
-melhor_movimento(CInicial, CFinal, [M|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
+melhor_movimento(_, _, _, [], MelhorPecaTemp, MelhorMovTemp, _, MelhorPecaTemp, MelhorMovTemp):- MelhorPecaTemp \= 'sem_peca'.
+
+melhor_movimento(CInicial, CFinal, Anteriores, [M|Restantes], _, _, DistTemp, Peca, Movimento):-
 	mov_legal(CInicial, M, P, Temp),
+	not(na_lista(Anteriores, Temp)),
 	dist_manhattan(Temp, CFinal, Distancia),
 	Distancia < DistTemp,
-	melhor_movimento(CInicial, CFinal, Restantes, P, M, Distancia, Peca, Movimento).
+	melhor_movimento(CInicial, CFinal, Anteriores, Restantes, P, M, Distancia, Peca, Movimento).
 	
-melhor_movimento(CInicial, CFinal, [_|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
-	melhor_movimento(CInicial, CFinal, Restantes, MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento).
+melhor_movimento(CInicial, CFinal, Anteriores, [_|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
+	melhor_movimento(CInicial, CFinal, Anteriores, Restantes, MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento).*/
 	
 % Imprime os passos realizados, por ordem.
-imprime_passos([]):- write('.').
-imprime_passos([[Peca,M]|Restantes]):-
+imprime_passos([], _):- write('.').
+imprime_passos([[Peca,M]|Restantes], Stream):-
 	nome_movimento(M, Movimento),
-	nl,
-	write('mova a peca '),
-	write(Peca),
-	write(' para '),
-	write(Movimento),
-	imprime_passos(Restantes).
+	nl(Stream),
+	write(Stream, 'mova a peca '),
+	write(Stream, Peca),
+	write(Stream, ' para '),
+	write(Stream, Movimento),
+	imprime_passos(Restantes, Stream).
 	
 % Verifica se um determinado Item se encontra numa dada lista.
 na_lista([Cabeca|Cauda], Item):-
@@ -247,9 +310,27 @@ imprime_lista([Cabeca|Cauda], Contador, T):-
 escreve_digito(N):- N \== 0 -> write( N) ; write(' ').
 
 % Devolve em L1 os primeiros N elementos da lista, em L2 os restantes.
+separa_N([Cabeca|Cauda], 0, [], [Cabeca|Cauda]).
 separa_N([Cabeca|Cauda], 1, [Cabeca], Cauda).
 separa_N([Cabeca|Cauda], N, L1, L2):-
 	N > 1,
 	N1 is N - 1,
 	separa_N(Cauda, N1, Temp, L2),
 	append([Cabeca], Temp, L1).
+
+% Devolve em Resultado a Lista sem o elemento de indice N.
+remove_N(Lista, N, Resultado):-
+	separa_N(Lista, N, L1, [_|L2]),
+	append(L1, L2, Resultado).	
+	
+% Devolve em Elemento o item na posicao N da Lista.
+elemento_N([Cabeca|_], 0, Cabeca).
+elemento_N([Cabeca|Cauda], N, Elemento):-
+	N1 is N - 1,
+	elemento_N(Cauda, N1, Elemento).
+
+% Dada uma lista, calcula o numero de elementos
+numero_elementos([], 0).
+numero_elementos([_|Cauda], Total):-
+	numero_elementos(Cauda, Temp),
+	Total is Temp + 1.
