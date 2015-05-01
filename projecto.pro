@@ -162,10 +162,14 @@ resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	elemento_N(Abertos, Indice, No),
 	remove_N(Abertos, Indice, Abertos1),
 	Fechados1 = [No|Fechados],
-	expande_no(No, Abertos1, Fechados1, Solucao).
+	expande_no(No, Abertos1, Fechados1, CFinal, Solucao).
 
 expande_no([C, F, G, H, M], Abertos, Fechados, C, M).
-expande_no([C, F, G, H, M], Abertos, Fechados, CFinal, Solucao).
+expande_no(No, Abertos, Fechados, CFinal, Solucao):-
+	sucessores(No, CFinal, Sucessores),
+	append(Sucessores, Abertos, Abertos1),
+	append([No], Fechados, Fechados1),
+	resolve_info_m(CFinal, Abertos1, Fechados1, Solucao).
 
 sucessores([C, _, G, _, M], CFinal, Sucessores):-
 	ordem(Ordem),
@@ -177,7 +181,8 @@ sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 	G1 is G + 1,
 	dist_manhattan(Resultado, CFinal, H),
 	F is G1 + H,
-	no(Resultado, F, G, H, [Mov|M], No),
+	append(M, [[Peca, Mov]], M1),
+	no(Resultado, F, G, H, M1, No),
 	sucessores([C, '', G, '', M], CFinal, Temp, Restantes),
 	Sucessores = [No|Temp].
 	
