@@ -144,7 +144,7 @@ resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
 	
 % Procura informada utilizando A* e distancia de Manhattan!
-resolve_info_m(CInicial, CFinal, NoInicial):-
+resolve_info_m(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	!,
 	M = [],
@@ -153,24 +153,36 @@ resolve_info_m(CInicial, CFinal, NoInicial):-
 	F is G + H,
 	no(CInicial, F, G, H, M, NoInicial),
 	resolve_info_m(CFinal, [NoInicial], [], Solucao),
-	open('output.txt', write, Stream),
-	imprime_passos(Solucao, Stream),
-	close(Stream).
+	imprime_passos(Solucao).
 	
 resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	menor_F(Abertos, Indice),
 	elemento_N(Abertos, Indice, No),
 	remove_N(Abertos, Indice, Abertos1),
-	Fechados1 = [No|Fechados],
-	expande_no(No, Abertos1, Fechados1, CFinal, Solucao).
+	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
-expande_no([C, F, G, H, M], Abertos, Fechados, C, M).
+expande_no([C, _, _, _, M], _, _, C, M).
 expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
-	append(Sucessores, Abertos, Abertos1),
+	filtra_sucessores(Sucessores, Abertos, Fechados, Abertos1),
 	append([No], Fechados, Fechados1),
 	resolve_info_m(CFinal, Abertos1, Fechados1, Solucao).
+	
+filtra_sucessores([], Abertos, _, Abertos).
+filtra_sucessores([No|Restantes], Abertos, Fechados, Resultado):-
+	not(configuracao_calculada(Abertos, No)),
+	not(configuracao_calculada(Fechados, No)),
+	filtra_sucessores(Restantes, Abertos, Fechados, Temp),
+	append([No], Temp, Resultado).
+	
+filtra_sucessores([_|Restantes], Abertos, Fechados, Resultado):-
+	filtra_sucessores(Restantes, Abertos, Fechados, Resultado).
 
+configuracao_calculada([[Cabeca|_]|Lista], No):-
+	[Configuracao|_] = No,
+	(Cabeca == Configuracao;
+	configuracao_calculada(Lista, No)).
+	
 sucessores([C, _, G, _, M], CFinal, Sucessores):-
 	ordem(Ordem),
 	sucessores([C, _, G, _, M], CFinal, Sucessores, Ordem).
@@ -182,7 +194,7 @@ sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 	dist_manhattan(Resultado, CFinal, H),
 	F is G1 + H,
 	append(M, [[Peca, Mov]], M1),
-	no(Resultado, F, G, H, M1, No),
+	no(Resultado, F, G1, H, M1, No),
 	sucessores([C, '', G, '', M], CFinal, Temp, Restantes),
 	Sucessores = [No|Temp].
 	
@@ -253,15 +265,15 @@ melhor_movimento(CInicial, CFinal, Anteriores, [_|Restantes], MelhorPecaTemp, Me
 	melhor_movimento(CInicial, CFinal, Anteriores, Restantes, MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento).*/
 	
 % Imprime os passos realizados, por ordem.
-imprime_passos([], _):- write('.').
-imprime_passos([[Peca,M]|Restantes], Stream):-
+imprime_passos([]):- write('.').
+imprime_passos([[Peca,M]|Restantes]):-
 	nome_movimento(M, Movimento),
-	nl(Stream),
-	write(Stream, 'mova a peca '),
-	write(Stream, Peca),
-	write(Stream, ' para '),
-	write(Stream, Movimento),
-	imprime_passos(Restantes, Stream).
+	nl,
+	write('mova a peca '),
+	write(Peca),
+	write(' para '),
+	write(Movimento),
+	imprime_passos(Restantes).
 	
 % Verifica se um determinado Item se encontra numa dada lista.
 na_lista([Cabeca|Cauda], Item):-
@@ -330,7 +342,7 @@ remove_N(Lista, N, Resultado):-
 	
 % Devolve em Elemento o item na posicao N da Lista.
 elemento_N([Cabeca|_], 0, Cabeca).
-elemento_N([Cabeca|Cauda], N, Elemento):-
+elemento_N([_|Cauda], N, Elemento):-
 	N1 is N - 1,
 	elemento_N(Cauda, N1, Elemento).
 
