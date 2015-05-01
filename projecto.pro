@@ -14,6 +14,12 @@ jogada(c, N):-
 	N is -T.
 jogada(b, N):-
 	tamanho(N).
+	
+% Jogadas e os seus nomes.
+nome_movimento(c, 'cima').
+nome_movimento(b, 'baixo').
+nome_movimento(e, 'a esquerda').
+nome_movimento(d, 'a direita').
  
 % Verifica se a Peca esta numa dada Posicao num dado Tabuleiro.
 % Podes fazer perguntas do genero peca([1, 2, 3], P, 2). e ele responde P = 1.
@@ -66,31 +72,26 @@ mov_legal(CInicial, Jogada, Peca, CFinal):-
 	valida(Posicao, Posicao1, Offset),
 	troca(CInicial, Peca, 0, CFinal).
 
-% Verifica se um movimento, que seja direita ou esquerda, nao muda de linha
-%valida(PInicial, PFinal, Offset):-
-%	(Offset == -1; Offset == 1),
-%	tamanho(T),
-%	A is (PInicial mod T) + Offset,
-%	B is (PFinal mod T),
-%	A == B.
-
+% Valida os movimentos horizontais
 valida(PInicial, PFinal, Offset):-
 	(Offset == 1; Offset == -1),
 	mesma_linha(PInicial, PFinal).
 
+% Valida os movimentos verticais
 valida(_, _, Offset):-
 	(tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
 	
+
 resolve_manual(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
-	read(M),
+	pede_input(M),
 	resolve_manual(CInicial, CFinal, M).
 	
 resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado \= CFinal,
 	imprime_transf(CInicial, Resultado),
-	read(M2),
+	pede_input(M2),
 	resolve_manual(Resultado, CFinal, M2).
 	
 resolve_manual(CInicial, CFinal, M):-
@@ -100,53 +101,54 @@ resolve_manual(CInicial, CFinal, M):-
 	write('DING DING DING').
 	
 resolve_manual(CInicial, CFinal, M):-
-	not(mov_legal(CInicial, M, _, Resultado)),
+	not(mov_legal(CInicial, M, _, _)),
 	imprime_transf(CInicial, CInicial),
-	read(M2),
+	pede_input(M2),
 	resolve_manual(CInicial, CFinal, M2).
+	
+pede_input(M):-
+	writeln('Qual o seu movimento?'),
+	read(M).
 	
 % Procura cega!
 resolve_cego(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	ordem_cega(OC),
-	resolve_cego(CInicial, CFinal, OC, []).
+	resolve_cego(CInicial, CFinal, OC, [], [], Solucao),
+	imprime_passos(Solucao).
 	
-resolve_cego(CInicial, CFinal, [M|_], Anteriores):-
-	mov_legal(CInicial, M, _, Resultado),
+resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
+	mov_legal(CInicial, M, Peca, Resultado),
 	not(Resultado == CFinal),
 	not(na_lista(Anteriores, Resultado)),
 	append([Resultado], Anteriores, Anteriores2),
-	imprime_transf(CInicial, Resultado),
 	ordem_cega(OC),
-	resolve_cego(Resultado, CFinal, OC, Anteriores2).
+	append(Movimentos, [[Peca, M]], Temp),
+	resolve_cego(Resultado, CFinal, OC, Anteriores2, Temp, Solucao).
 	
-resolve_cego(CInicial, CFinal, [M|_], _):-
-	mov_legal(CInicial, M, _, Resultado),
+resolve_cego(CInicial, CFinal, [M|_], _, Movimentos, Solucao):-
+	mov_legal(CInicial, M, Peca, Resultado),
 	Resultado == CFinal,
-	imprime_transf(CInicial, Resultado),
-	write('DING DING DING').
+	append(Movimentos, [[Peca, M]], Solucao).
 	
-resolve_cego(CInicial, CFinal, [M|Restantes], Anteriores):-
+resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	%((not(mov_legal(CInicial, M, _, Resultado))); (mov_legal(CInicial, M, _, Resultado), na_lista(Anteriores, Resultado))),
-	write(Restantes),
-	resolve_cego(CInicial, CFinal, Restantes, Anteriores).
-
-na_lista([Cabeca|Cauda], Item):-
-	not(vazio(Cauda)),
-	Cabeca == Item.
+	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
+	
+imprime_passos([]):-
+	write('.').
+imprime_passos([[Peca,M]|Restantes]):-
+	nome_movimento(M, Movimento),
+	nl,
+	write('mova a peca '),
+	write(Peca),
+	write(' para '),
+	write(Movimento),
+	imprime_passos(Restantes).
 	
 na_lista([Cabeca|Cauda], Item):-
-	not(vazio(Cauda)),
-	not(Cabeca == Item),
+	Cabeca == Item;
 	na_lista(Cauda, Item).
-	
-na_lista([Cabeca|Cauda], Item):-
-	vazio(Cauda),
-	Cabeca == Item.	
-	
-	
-	
-	
 	
 imprime_transf(CInicial, CFinal):-
 	tamanho(T),
