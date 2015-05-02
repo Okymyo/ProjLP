@@ -12,7 +12,9 @@
 %
 
 % Tamanho do nosso tabuleiro.
-tamanho(4).
+% E de notar que a local stack e o tempo de computacao para o algoritmo A* cresce consideravelmente (exponencial?)
+% com o tamanho, bem como com o numero de passos necessarios. Testado ate 4x4 com 50 passos necessarios.
+tamanho(3).
 
 % Ordem da procura cega.
 ordem([b, d, c, e]).
@@ -277,15 +279,17 @@ transformacao_possivel(CInicial, CFinal):-
 	inversoes_c(CInicial, CFinal, Inversoes),
 	tamanho(T),
 	!,
+	(T =< 0 -> fail; true),
 	(T mod 2 =:= 1 ->
-	Inversoes mod 2 =:= 0;					% Tamanho impar
-	(peca(CInicial, PosicaoI, 0),
+	Inversoes mod 2 =:= 0;							% Tamanho impar (3x3, 5x5, ...)
+	(peca(CInicial, PosicaoI, 0),					% Tamanho par (2x2, 4x4, ...)
 	peca(CFinal, PosicaoF, 0),
 	linha(PosicaoI, LinhaI),
 	linha(PosicaoF, LinhaF),
-	(Inversoes + LinhaI) mod 2 =:= LinhaF mod 2)).
+	(Inversoes + LinhaI) mod 2 =:= LinhaF mod 2)),
+	!.
 
-% Calcula o numero de inversoes entre uma dada Configuracao Inicial e uma Configuracao Final
+% Calcula o numero de inversoes entre uma dada Configuracao Inicial e uma Configuracao Final.
 inversoes_c(CInicial, CFinal, Total):-
 	tamanho(T),
 	NumPecas is T*T - 1,
@@ -298,6 +302,7 @@ inversoes_c(CInicial, CFinal, Peca, Total):-
 	inversoes_p(CInicial, CFinal, Peca, Inversoes),
 	Total is Temp + Inversoes.
 
+% Calcula o numero de inversoes associadas a uma determinada Peca.
 inversoes_p([Cabeca], _, Cabeca, 0).
 inversoes_p([Cabeca|_], _, Cabeca, 0).
 inversoes_p([0|Restantes], CFinal, Peca, Inversoes):- inversoes_p(Restantes, CFinal, Peca, Inversoes).
