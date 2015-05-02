@@ -1,10 +1,18 @@
-% List of good test cases:
-% (3x3 - 05 steps) resolve_info_m([1, 2, 3, 4, 5, 6, 7, 8, 0], [1, 2, 3, 7, 4, 5, 8, 0, 6]).
-% (3x3 - 31 steps) resolve_info_m([8, 6, 7, 2, 5, 4, 3, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
-% (4x4 - 50 steps) resolve_info_m([12, 15, 6, 10, 4, 9, 5, 8, 14, 13, 0, 2, 1, 7, 11, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
+% Bons casos de teste:
+% (3x3 - 05 passos) resolve_info_m([1, 2, 3, 4, 5, 6, 7, 8, 0], [1, 2, 3, 7, 4, 5, 8, 0, 6]).
+% (3x3 - 31 passos) resolve_info_m([8, 6, 7, 2, 5, 4, 3, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
+% (4x4 - 50 passos) resolve_info_m([12, 15, 6, 10, 4, 9, 5, 8, 14, 13, 0, 2, 1, 7, 11, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
+% (3x3 -      TRUE) transformacao_possivel([0, 1, 3, 4, 2, 5, 7, 8, 6], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
+% (3x3 -     FALSE) transformacao_possivel([1, 2, 3, 4, 6, 7, 8, 5, 0], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
+% (4x4 -      TRUE) transformacao_possivel([1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 7, 11, 13, 14, 15, 12], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
+% (4x4 -     FALSE) transformacao_possivel([1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 7, 11, 13, 14, 15, 12], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 14, 0]).
+
+%
+% Declaracoes Gerais
+%
 
 % Tamanho do nosso tabuleiro.
-tamanho(3).
+tamanho(4).
 
 % Ordem da procura cega.
 ordem([b, d, c, e]).
@@ -20,6 +28,10 @@ nome_movimento(c, 'cima').
 nome_movimento(b, 'baixo').
 nome_movimento(e, 'a esquerda').
 nome_movimento(d, 'a direita').
+
+%
+% Predicados Gerais
+%
 
 % Verifica se a Peca esta numa dada Posicao num dado Tabuleiro.
 % Podem-se fazer perguntas do genero peca([1, 2, 3], P, 2). a qual a resposta e P = 1.
@@ -93,6 +105,7 @@ resolve_manual(CInicial, CFinal):-
 	resolve_manual(CInicial, CFinal, M).
 
 resolve_manual(CInicial, CFinal, M):-
+	transformacao_possivel(CInicial, CFinal),
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado \= CFinal,
 	imprime_config(Resultado),
@@ -127,6 +140,7 @@ pede_input(M):-
 %	4.1. Caso tenha terminado, listar passos necessarios
 % 5. Restaurar lista de movimentos ao estado inicial, e correr com a nova configuracao
 resolve_cego(CInicial, CFinal):-
+	transformacao_possivel(CInicial, CFinal),
 	imprime_transf(CInicial, CFinal),
 	!,
 	ordem(Ordem),
@@ -147,6 +161,11 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
+	
+% Verifica se um determinado Item se encontra numa dada lista.
+na_lista([Cabeca|Cauda], Item):-
+	Cabeca == Item;
+	na_lista(Cauda, Item).
 
 % Procura informada utilizando A* e distancia de Manhattan!
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
@@ -241,6 +260,58 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	linha(PFinal, LinhaF),
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
+	
+% Verificacao de solvabilidade
+% Dada uma Configuracao Inicial e uma Configuracao Final, indica se e possivel transformar uma na outra.
+%
+% Para tamanhos impares:
+% Calcula-se o numero de inversoes necessarias: o numero de pecas que se encontram a frente da Peca A
+% na configuracao inicial mas atras da mesma na configuracao final. Isto e calculado para cada peca.
+% Este valor tem necessariamente de ser par.
+%	
+% Para tamanhos pares:
+% E feito calculando novamente o numero de inversoes necessarias, mas desta vez soma-se a esse resultado
+% a linha em que se encontra a peca 0 (o espaco vazio), e mod2 deste valor tem de ser igual a mod2
+% da linha em que se encontra o 0 na configuracao final.
+transformacao_possivel(CInicial, CFinal):-
+	inversoes_c(CInicial, CFinal, Inversoes),
+	tamanho(T),
+	!,
+	(T mod 2 =:= 1 ->
+	Inversoes mod 2 =:= 0;					% Tamanho impar
+	(peca(CInicial, PosicaoI, 0),
+	peca(CFinal, PosicaoF, 0),
+	linha(PosicaoI, LinhaI),
+	linha(PosicaoF, LinhaF),
+	(Inversoes + LinhaI) mod 2 =:= LinhaF mod 2)).
+
+% Calcula o numero de inversoes entre uma dada Configuracao Inicial e uma Configuracao Final
+inversoes_c(CInicial, CFinal, Total):-
+	tamanho(T),
+	NumPecas is T*T - 1,
+	inversoes_c(CInicial, CFinal, NumPecas, Total).
+
+inversoes_c(_, _, 0, 0).
+inversoes_c(CInicial, CFinal, Peca, Total):-
+	ProxPeca is Peca - 1,
+	inversoes_c(CInicial, CFinal, ProxPeca, Temp),
+	inversoes_p(CInicial, CFinal, Peca, Inversoes),
+	Total is Temp + Inversoes.
+
+inversoes_p([Cabeca], _, Cabeca, 0).
+inversoes_p([Cabeca|_], _, Cabeca, 0).
+inversoes_p([0|Restantes], CFinal, Peca, Inversoes):- inversoes_p(Restantes, CFinal, Peca, Inversoes).
+inversoes_p([Cabeca|Restantes], CFinal, Peca, Inversoes):-
+	inversoes_p(Restantes, CFinal, Peca, Temp),
+	peca(CFinal, PosicaoCabeca, Cabeca),
+	peca(CFinal, PosicaoPeca, Peca),
+	(PosicaoCabeca > PosicaoPeca ->
+	Inversoes is Temp + 1;
+	Inversoes = Temp).
+	
+%
+% Predicados Secundarios
+%
 
 % Imprime os passos realizados, por ordem.
 imprime_passos([]):- write('.').
@@ -252,11 +323,6 @@ imprime_passos([[Peca,M]|Restantes]):-
 	write(' para '),
 	write(Movimento),
 	imprime_passos(Restantes).
-
-% Verifica se um determinado Item se encontra numa dada lista.
-na_lista([Cabeca|Cauda], Item):-
-	Cabeca == Item;
-	na_lista(Cauda, Item).
 
 % Dada uma transformacao CInicial -> CFinal, escreve os elementos de ambas as configuracoes separados por '->'	
 imprime_transf(CInicial, CFinal):-
@@ -302,7 +368,7 @@ imprime_lista([Cabeca|Cauda], Contador, T):-
 	imprime_lista(Cauda, Contador1, T).
 
 % Escreve o digito dado, substituindo 0 por um espaco
-escreve_digito(N):- N \== 0 -> write( N) ; write(' ').
+escreve_digito(N):- N \== 0 -> write(N); write(' ').
 
 % Devolve em L1 os primeiros N elementos da lista, em L2 os restantes.
 separa_N([Cabeca|Cauda], 0, [], [Cabeca|Cauda]).
