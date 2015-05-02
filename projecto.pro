@@ -144,6 +144,10 @@ resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
 	
 % Procura informada utilizando A* e distancia de Manhattan!
+% A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
+% A Lista Fechados contem todos os Nos previamente expandidos.
+% Para poupar memoria, e como os valores de F/G/H sao irrelevantes nos Nos expandidos, estes nao sao guardados.
+% Para alem de poupar memoria, isto acelera tambem ligeiramente o processo de procura.
 resolve_info_m(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	!,
@@ -154,7 +158,8 @@ resolve_info_m(CInicial, CFinal):-
 	no(CInicial, F, G, H, M, NoInicial),
 	resolve_info_m(CFinal, [NoInicial], [], Solucao),
 	imprime_passos(Solucao).
-	
+
+% Escolhe o no da Lista de nos abertos com o menor F, e expande-o.
 resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	menor_F(Abertos, Indice),
 	elemento_N(Abertos, Indice, No),
@@ -162,6 +167,7 @@ resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	!,
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
+% Expande um dado No, adicionando todos os seus sucessores nao-previamente descobertos a Lista de nos abertos, e o no dado a Lista de nos fechados.
 expande_no([C, _, _, _, M], _, _, C, M).
 expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
@@ -179,11 +185,13 @@ filtra_sucessores([No|Restantes], Abertos, Fechados, Resultado):-
 filtra_sucessores([_|Restantes], Abertos, Fechados, Resultado):-
 	filtra_sucessores(Restantes, Abertos, Fechados, Resultado).
 
+% Verifica se um No se encontra numa Lista de nos.
 configuracao_calculada([[Cabeca|_]|Lista], No):-
 	[Configuracao|_] = No,
 	(Cabeca == Configuracao;
 	configuracao_calculada(Lista, No)).
 	
+% Dado um No, e a Configuracao Final, gera todos os Nos Sucessores.
 sucessores([C, _, G, _, M], CFinal, Sucessores):-
 	ordem(Ordem),
 	sucessores([C, _, G, _, M], CFinal, Sucessores, Ordem).
@@ -202,6 +210,7 @@ sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 sucessores([C, _, G, _, M], CFinal, Sucessores, [_|Restantes]):-
 	sucessores([C, '', G, '', M], CFinal, Sucessores, Restantes).
 
+% Dada uma Lista de nos, devolve o indice do no de menor F.
 menor_F(Abertos, Indice):- menor_F(Abertos, 0, _, Indice).
 menor_F([Cabeca|[]], Actual, F, Actual):- no(_, F, _, _, _, Cabeca).
 menor_F([Cabeca|Cauda], Actual, F, Indice):-
@@ -209,7 +218,6 @@ menor_F([Cabeca|Cauda], Actual, F, Indice):-
 	menor_F(Cauda, Prox, F_Temp, I_Temp),
 	no(_, F_Actual, _, _, _, Cabeca),
 	(F_Actual =< F_Temp -> (F = F_Actual, Indice = Actual); (F = F_Temp, Indice = I_Temp)).
-
 
 % Verifica se uma dada configuracao, com f(C) = F, g(C) = G, h(C) = H, e movimentos ate C, gera um determinado no.
 no(C, F, G, H, M, [C, F, G, H, M]).
