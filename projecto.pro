@@ -146,8 +146,6 @@ resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 % Procura informada utilizando A* e distancia de Manhattan!
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
 % A Lista Fechados contem todos os Nos previamente expandidos.
-% Para poupar memoria, e como os valores de F/G/H sao irrelevantes nos Nos expandidos, estes nao sao guardados.
-% Para alem de poupar memoria, isto acelera tambem ligeiramente o processo de procura.
 resolve_info_m(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	!,
@@ -177,8 +175,9 @@ expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	
 filtra_sucessores([], Abertos, _, Abertos).
 filtra_sucessores([No|Restantes], Abertos, Fechados, Resultado):-
-	not(configuracao_calculada(Abertos, No)),
-	not(configuracao_calculada(Fechados, No)),
+	[Configuracao|_] = No,
+	not(configuracao_calculada(Abertos, Configuracao)),
+	not(configuracao_calculada(Fechados, Configuracao)),
 	filtra_sucessores(Restantes, Abertos, Fechados, Temp),
 	append([No], Temp, Resultado).
 	
@@ -186,10 +185,9 @@ filtra_sucessores([_|Restantes], Abertos, Fechados, Resultado):-
 	filtra_sucessores(Restantes, Abertos, Fechados, Resultado).
 
 % Verifica se um No se encontra numa Lista de nos.
-configuracao_calculada([[Cabeca|_]|Lista], No):-
-	[Configuracao|_] = No,
+configuracao_calculada([[Cabeca|_]|Lista], Configuracao):-
 	(Cabeca == Configuracao;
-	configuracao_calculada(Lista, No)).
+	configuracao_calculada(Lista, Configuracao)).
 	
 % Dado um No, e a Configuracao Final, gera todos os Nos Sucessores.
 sucessores([C, _, G, _, M], CFinal, Sucessores):-
