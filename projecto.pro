@@ -1,21 +1,26 @@
+% List of good test cases:
+% (3x3 - 05 steps) resolve_info_m([1, 2, 3, 4, 5, 6, 7, 8, 0], [1, 2, 3, 7, 4, 5, 8, 0, 6]).
+% (3x3 - 31 steps) resolve_info_m([8, 6, 7, 2, 5, 4, 3, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
+% (4x4 - 50 steps) resolve_info_m([12, 15, 6, 10, 4, 9, 5, 8, 14, 13, 0, 2, 1, 7, 11, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
+
 % Tamanho do nosso tabuleiro.
 tamanho(3).
 
 % Ordem da procura cega.
 ordem([b, d, c, e]).
- 
+
 % Jogadas e os seus offsets.
 jogada(e, -1).
 jogada(d, 1).
 jogada(c, N):- tamanho(T), N is -T.
 jogada(b, N):- tamanho(N).
-	
+
 % Jogadas e os seus nomes.
 nome_movimento(c, 'cima').
 nome_movimento(b, 'baixo').
 nome_movimento(e, 'a esquerda').
 nome_movimento(d, 'a direita').
- 
+
 % Verifica se a Peca esta numa dada Posicao num dado Tabuleiro.
 % Podem-se fazer perguntas do genero peca([1, 2, 3], P, 2). a qual a resposta e P = 1.
 peca(Tabuleiro, Posicao, Peca):- peca(Tabuleiro, Posicao, Peca, 0).
@@ -23,39 +28,39 @@ peca([Peca|_], Posicao, Peca, Acc):- Posicao is Acc.
 peca([_|Cauda], Posicao, Peca, Acc):- 
 	Acc1 is Acc+1,
 	peca(Cauda, Posicao, Peca, Acc1).
- 
+
 % Verifica se uma lista com todas as Peca1 substituidas por Peca2 e igual a outra.
 substitui([Peca1|Cauda], Peca1, Peca2, [Peca2|Cauda]).
 substitui([Cabeca|Cauda], Peca1, Peca2, CFinal):-
 	substitui(Cauda, Peca1, Peca2, CFinal1),
 	CFinal = [Cabeca|CFinal1].
-	
+
 % Verifica se uma configuracao CInical é igual à CFinal com Peca1 trocada por Peca2.
 troca(CInicial, Peca1, Peca2, CFinal):-
 	substitui(CInicial, Peca1, tmp, CTemporaria),
 	substitui(CTemporaria, Peca2, Peca1, CTemporaria1),
 	substitui(CTemporaria1, tmp, Peca2, CFinal).
- 
+
 % Verifica se uma Posicao esta numa dada Linha.
 % As Linhas comecam a contar do 0.
 % Podes fazer perguntas do genero linha(2, L). L=0.
 linha(Posicao, Linha):-
 	tamanho(T),
 	Linha is Posicao // T.
-	
+
 % Verifica se uma Posicao esta numa dada Coluna.
 % As Colunas comecam a contar do 0.
 % Pode-se fazer perguntas do genero de coluna(4, C). C=1
 coluna(Posicao, Coluna):-
 	tamanho(T),
 	Coluna is Posicao mod T.
- 
+
 % Verifica se Posicao1 esta na mesma linha que a Posicao2.
 % Este predicado apenas verifica! Nao instancia nada! Nao podes fazer perguntas mesma_linha(1, P).
 mesma_linha(Posicao1, Posicao2):-
 	linha(Posicao1, Linha),
 	linha(Posicao2, Linha).
- 
+
 % Verifica se um movimento J aplicado na peca Peca transforma CInicial em CFinal.
 mov_legal(CInicial, Jogada, Peca, CFinal):-
 	peca(CInicial, Posicao, Peca),
@@ -73,7 +78,7 @@ valida(PInicial, PFinal, Offset):-
 % Valida os movimentos verticais.
 valida(_, _, Offset):-
 	(tamanho(Offset); (OffsetInv is -Offset, tamanho(OffsetInv))).
-	
+
 % Resolucao manual:
 % 1. Pedir input ao utilizador
 % 2. Verificar se input e um movimento legal
@@ -86,20 +91,20 @@ resolve_manual(CInicial, CFinal):-
 	!,
 	pede_input(M),
 	resolve_manual(CInicial, CFinal, M).
-	
+
 resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado \= CFinal,
 	imprime_config(Resultado),
 	pede_input(M2),
 	resolve_manual(Resultado, CFinal, M2).
-	
+
 resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado = CFinal,
 	imprime_config(Resultado),
 	write('Parabens!').
-	
+
 resolve_manual(CInicial, CFinal, M):-
 	not(mov_legal(CInicial, M, _, _)),
 	writeln('Movimento ilegal'),
@@ -111,7 +116,7 @@ pede_input(M):-
 	nl,
 	writeln('Qual o seu movimento?'),
 	read(M).
-	
+
 % Resolucao cega:
 % 1. Obter movimento da lista de movimentos
 % 2. Verificar se o movimento e um movimento legal
@@ -127,11 +132,11 @@ resolve_cego(CInicial, CFinal):-
 	ordem(Ordem),
 	resolve_cego(CInicial, CFinal, Ordem, [], [], Solucao),
 	imprime_passos(Solucao).
-	
+
 resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
 	CInicial == CFinal,
 	Solucao = Movimentos.
-	
+
 resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	mov_legal(CInicial, M, Peca, Resultado),
 	not(na_lista(Anteriores, Resultado)),
@@ -139,10 +144,10 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	ordem(Ordem),
 	append(Movimentos, [[Peca, M]], Temp),
 	resolve_cego(Resultado, CFinal, Ordem, Anteriores2, Temp, Solucao).
-	
+
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
-	
+
 % Procura informada utilizando A* e distancia de Manhattan!
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
 % A Lista Fechados contem todos os Nos previamente expandidos.
@@ -171,16 +176,18 @@ expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
 	filtra_sucessores(Sucessores, Abertos, Fechados, Abertos1),
 	append([No], Fechados, Fechados1),
+	!,
 	resolve_info_m(CFinal, Abertos1, Fechados1, Solucao).
-	
+
 filtra_sucessores([], Abertos, _, Abertos).
 filtra_sucessores([No|Restantes], Abertos, Fechados, Resultado):-
 	[Configuracao|_] = No,
 	not(configuracao_calculada(Abertos, Configuracao)),
 	not(configuracao_calculada(Fechados, Configuracao)),
+	!,
 	filtra_sucessores(Restantes, Abertos, Fechados, Temp),
 	append([No], Temp, Resultado).
-	
+
 filtra_sucessores([_|Restantes], Abertos, Fechados, Resultado):-
 	filtra_sucessores(Restantes, Abertos, Fechados, Resultado).
 
@@ -188,15 +195,16 @@ filtra_sucessores([_|Restantes], Abertos, Fechados, Resultado):-
 configuracao_calculada([[Cabeca|_]|Lista], Configuracao):-
 	(Cabeca == Configuracao;
 	configuracao_calculada(Lista, Configuracao)).
-	
+
 % Dado um No, e a Configuracao Final, gera todos os Nos Sucessores.
 sucessores([C, _, G, _, M], CFinal, Sucessores):-
 	ordem(Ordem),
 	sucessores([C, _, G, _, M], CFinal, Sucessores, Ordem).
-	
+
 sucessores(_, _, [], []).
 sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 	mov_legal(C, Mov, Peca, Resultado),
+	!,
 	G1 is G + 1,
 	dist_manhattan(Resultado, CFinal, H),
 	F is G1 + H,
@@ -204,7 +212,7 @@ sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 	no(Resultado, F, G1, H, M1, No),
 	sucessores([C, '', G, '', M], CFinal, Temp, Restantes),
 	Sucessores = [No|Temp].
-	
+
 sucessores([C, _, G, _, M], CFinal, Sucessores, [_|Restantes]):-
 	sucessores([C, '', G, '', M], CFinal, Sucessores, Restantes).
 
@@ -219,25 +227,6 @@ menor_F([Cabeca|Cauda], Actual, F, Indice):-
 
 % Verifica se uma dada configuracao, com f(C) = F, g(C) = G, h(C) = H, e movimentos ate C, gera um determinado no.
 no(C, F, G, H, M, [C, F, G, H, M]).
-	
-/*resolve_info_m(CInicial, CFinal):-
-	imprime_transf(CInicial, CFinal),
-	!,
-	resolve_info_m(CInicial, CFinal, [], [], Solucao),
-	open('output2.txt', write, Stream),
-	imprime_passos(Solucao, Stream),
-	close(Stream).
-	
-resolve_info_m(CInicial, CFinal, _, Movimentos, Solucao):-
-	CInicial == CFinal,
-	Solucao = Movimentos.
-	
-resolve_info_m(CInicial, CFinal, Anteriores, Movimentos, Solucao):-
-	melhor_movimento(CInicial, CFinal, Anteriores, Peca, Movimento),
-	mov_legal(CInicial, Movimento, Peca, Resultado),
-	append(Movimentos, [[Peca, Movimento]], Temp),
-	append([Resultado], Anteriores, Anteriores2),
-	resolve_info_m(Resultado, CFinal, Anteriores2, Temp, Solucao).*/
 
 % Calcula a distancia de Manhattan entre duas configuracoes.
 dist_manhattan(CInicial, CFinal, Distancia):- dist_manhattan(CInicial, CFinal, CInicial, 0, Distancia).
@@ -253,24 +242,6 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
 
-/*% Calcula o melhor movimento a realizar
-melhor_movimento(CInicial, CFinal, Anteriores, Peca, Movimento):-
-	ordem(Ordem),
-	dist_manhattan(CInicial, CFinal, Distancia),
-	melhor_movimento(CInicial, CFinal, Anteriores, Ordem, 'sem_peca', 'sem_movimento', Distancia, Peca, Movimento).
-	
-melhor_movimento(_, _, _, [], MelhorPecaTemp, MelhorMovTemp, _, MelhorPecaTemp, MelhorMovTemp):- MelhorPecaTemp \= 'sem_peca'.
-
-melhor_movimento(CInicial, CFinal, Anteriores, [M|Restantes], _, _, DistTemp, Peca, Movimento):-
-	mov_legal(CInicial, M, P, Temp),
-	not(na_lista(Anteriores, Temp)),
-	dist_manhattan(Temp, CFinal, Distancia),
-	Distancia < DistTemp,
-	melhor_movimento(CInicial, CFinal, Anteriores, Restantes, P, M, Distancia, Peca, Movimento).
-	
-melhor_movimento(CInicial, CFinal, Anteriores, [_|Restantes], MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento):-
-	melhor_movimento(CInicial, CFinal, Anteriores, Restantes, MelhorPecaTemp, MelhorMovTemp, DistTemp, Peca, Movimento).*/
-	
 % Imprime os passos realizados, por ordem.
 imprime_passos([]):- write('.').
 imprime_passos([[Peca,M]|Restantes]):-
@@ -281,19 +252,19 @@ imprime_passos([[Peca,M]|Restantes]):-
 	write(' para '),
 	write(Movimento),
 	imprime_passos(Restantes).
-	
+
 % Verifica se um determinado Item se encontra numa dada lista.
 na_lista([Cabeca|Cauda], Item):-
 	Cabeca == Item;
 	na_lista(Cauda, Item).
-	
+
 % Dada uma transformacao CInicial -> CFinal, escreve os elementos de ambas as configuracoes separados por '->'	
 imprime_transf(CInicial, CFinal):-
 	nl,
 	tamanho(T),
 	writeln('Transformacao desejada:'),
 	imprime_transf(CInicial, CFinal, 0, T).
-	
+
 imprime_transf(_, _, T, T).
 imprime_transf(CInicial, CFinal, 1, T):- imprime_transf(CInicial, CFinal, 1, T, ' ->').
 imprime_transf(CInicial, CFinal, Linha, T):- imprime_transf(CInicial, CFinal, Linha, T, '   ').
@@ -306,13 +277,13 @@ imprime_transf(CInicial, CFinal, Linha, T, Separador):-
 	imprime_lista(CFinal1, 0, T),
 	nl,
 	imprime_transf(CInicial2, CFinal2, Lin, T).
-	
+
 % Dada uma configuracao, escreve todos os elementos dessa mesma configuracao	
 imprime_config(Config):-
 	nl,
 	tamanho(T),
 	imprime_config(Config, 0, T).
-	
+
 imprime_config(_, T, T).
 imprime_config(Config, Linha, T):-
 	Lin is Linha+1,
@@ -346,7 +317,7 @@ separa_N([Cabeca|Cauda], N, L1, L2):-
 remove_N(Lista, N, Resultado):-
 	separa_N(Lista, N, L1, [_|L2]),
 	append(L1, L2, Resultado).	
-	
+
 % Devolve em Elemento o item na posicao N da Lista.
 elemento_N([Cabeca|_], 0, Cabeca).
 elemento_N([_|Cauda], N, Elemento):-
