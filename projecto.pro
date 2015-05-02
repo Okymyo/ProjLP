@@ -159,6 +159,7 @@ resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	menor_F(Abertos, Indice),
 	elemento_N(Abertos, Indice, No),
 	remove_N(Abertos, Indice, Abertos1),
+	!,
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
 expande_no([C, _, _, _, M], _, _, C, M).
