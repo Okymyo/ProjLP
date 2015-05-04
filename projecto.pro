@@ -101,13 +101,13 @@ valida(_, _, Offset):-
 %	3.1. Caso tenha terminado, anunciar
 % 4. Correr com a nova configuracao
 resolve_manual(CInicial, CFinal):-
+	transformacao_possivel(CInicial, CFinal),
 	imprime_transf(CInicial, CFinal),
 	!,
 	pede_input(M),
 	resolve_manual(CInicial, CFinal, M).
 
 resolve_manual(CInicial, CFinal, M):-
-	transformacao_possivel(CInicial, CFinal),
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado \= CFinal,
 	imprime_config(Resultado),
