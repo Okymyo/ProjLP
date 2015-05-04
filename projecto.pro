@@ -118,7 +118,8 @@ resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado = CFinal,
 	imprime_config(Resultado),
-	write('Parabens!').
+	write('Parabens!'),
+	!.
 
 resolve_manual(CInicial, CFinal, M):-
 	not(mov_legal(CInicial, M, _, _)),
@@ -173,6 +174,7 @@ na_lista([Cabeca|Cauda], Item):-
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
 % A Lista Fechados contem todos os Nos previamente expandidos.
 resolve_info_m(CInicial, CFinal):-
+	transformacao_possivel(CInicial, CFinal),
 	imprime_transf(CInicial, CFinal),
 	!,
 	M = [],
@@ -319,7 +321,7 @@ inversoes_p([Cabeca|Restantes], CFinal, Peca, Inversoes):-
 %
 
 % Imprime os passos realizados, por ordem.
-imprime_passos([]):- write('.').
+imprime_passos([]):- write('.'), !.
 imprime_passos([[Peca,M]|Restantes]):-
 	nome_movimento(M, Movimento),
 	nl,
