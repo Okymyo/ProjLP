@@ -17,7 +17,7 @@
 tamanho(3).
 
 % Ordem da procura cega.
-ordem([b, d, c, e]).
+ordem([c, b, e, d]).
 
 % Jogadas e os seus offsets.
 jogada(e, -1).
@@ -118,7 +118,7 @@ resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado = CFinal,
 	imprime_config(Resultado),
-	write('Parabens!'),
+	writeln('Parabens!'),
 	!.
 
 resolve_manual(CInicial, CFinal, M):-
@@ -129,16 +129,16 @@ resolve_manual(CInicial, CFinal, M):-
 
 % Pede input ao utilizador
 pede_input(M):-
-	nl,
 	writeln('Qual o seu movimento?'),
-	read(M).
+	read(M),
+	!.
 
 % Resolucao cega:
 % 1. Obter movimento da lista de movimentos
 % 2. Verificar se o movimento e um movimento legal
 %	2.1. Caso nao seja, retirar movimento da lista de movimentos, e correr novamente
 % 3. Verificar se o resultado desse movimento nao foi previamente obtido
-%	3.1. Caso nao seja, retirar movimento da lista de movimentos, e correr novamente
+%	3.1. Caso seja, retirar movimento da lista de movimentos, e correr novamente
 % 4. Aplicar movimento e guardar qual o movimento realizado e a peca movida
 %	4.1. Caso tenha terminado, listar passos necessarios
 % 5. Restaurar lista de movimentos ao estado inicial, e correr com a nova configuracao
@@ -147,7 +147,7 @@ resolve_cego(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	!,
 	ordem(Ordem),
-	resolve_cego(CInicial, CFinal, Ordem, [], [], Solucao),
+	resolve_cego(CInicial, CFinal, Ordem, [CInicial], [], Solucao),
 	imprime_passos(Solucao).
 
 resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
@@ -167,12 +167,19 @@ resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	
 % Verifica se um determinado Item se encontra numa dada lista.
 na_lista([Cabeca|Cauda], Item):-
-	Cabeca == Item;
+	(Cabeca == Item, !);
 	na_lista(Cauda, Item).
 
 % Procura informada utilizando A* e distancia de Manhattan!
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
 % A Lista Fechados contem todos os Nos previamente expandidos.
+%
+% Em cada ciclo do algoritmo, e encontrado o no com menor F, que e
+% igual a estimativa de distancia ate ao final (Manhattan Distance)
+% somada a distancia percorrida ate ao momento.
+% Pega-se depois nesse no, e expande-se, adicionando a lista de abertos
+% todos os nos derivados directamente desse, calculando os seus Fs, desde
+% que sejam nos que ainda nao tinham sido obtidos.
 resolve_info_m(CInicial, CFinal):-
 	transformacao_possivel(CInicial, CFinal),
 	imprime_transf(CInicial, CFinal),
@@ -194,6 +201,7 @@ resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
 % Expande um dado No, adicionando todos os seus sucessores nao-previamente descobertos a Lista de nos abertos, e o no dado a Lista de nos fechados.
+% expande_no([CFinal, _, G, _, M], _, Fechados, CFinal, Solucao):- volta_para_tras_camarada(Fechados1, [CFinal, G, G, 0, M], Solucao).
 expande_no([C, _, _, _, M], _, _, C, M).
 expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
@@ -264,12 +272,20 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	linha(PFinal, LinhaF),
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
+
+volta_para_tras_camarada(Fechados, [_, _, 0, _, [Peca, Mov]], Solucao).
+volta_para_tras_camarada(Fechados, [C, _, _, _, [Peca, Mov]], Solucao):-
+	jogada(Mov, Offset),
+	OffInverso is -Offset,
+	jogada(M, OffInverso),
+	mov_legal(C, M, _, Resultado).
+	
 	
 % Verificacao de solvabilidade
 % Dada uma Configuracao Inicial e uma Configuracao Final, indica se e possivel transformar uma na outra.
 %
 % Para tamanhos impares:
-% Calcula-se o numero de inversoes necessarias: o numero de pecas que se encontram a frente da Peca A
+% Calcula-se o numero de inversoes necessarias: o numero de pecas que se encontram a frente da Peca X
 % na configuracao inicial mas atras da mesma na configuracao final. Isto e calculado para cada peca.
 % Este valor tem necessariamente de ser par.
 %	
@@ -324,23 +340,26 @@ inversoes_p([Cabeca|Restantes], CFinal, Peca, Inversoes):-
 imprime_passos([]):- write('.'), !.
 imprime_passos([[Peca,M]|Restantes]):-
 	nome_movimento(M, Movimento),
-	nl,
 	write('mova a peca '),
 	write(Peca),
 	write(' para '),
 	write(Movimento),
-	imprime_passos(Restantes).
+	(Restantes \== [] ->
+	(nl,
+	imprime_passos(Restantes));
+	writeln('.')).
+	
+	escreve_digito(N):- N \== 0 -> write(N); write(' ').
 
 % Dada uma transformacao CInicial -> CFinal, escreve os elementos de ambas as configuracoes separados por '->'	
 imprime_transf(CInicial, CFinal):-
-	nl,
 	tamanho(T),
 	writeln('Transformacao desejada:'),
 	imprime_transf(CInicial, CFinal, 0, T).
 
 imprime_transf(_, _, T, T).
-imprime_transf(CInicial, CFinal, 1, T):- imprime_transf(CInicial, CFinal, 1, T, ' ->').
-imprime_transf(CInicial, CFinal, Linha, T):- imprime_transf(CInicial, CFinal, Linha, T, '   ').
+imprime_transf(CInicial, CFinal, 1, T):- imprime_transf(CInicial, CFinal, 1, T, ' -> ').
+imprime_transf(CInicial, CFinal, Linha, T):- imprime_transf(CInicial, CFinal, Linha, T, '    ').
 imprime_transf(CInicial, CFinal, Linha, T, Separador):-
 	Lin is Linha+1,
 	separa_N(CInicial, T, CInicial1, CInicial2),
@@ -355,7 +374,8 @@ imprime_transf(CInicial, CFinal, Linha, T, Separador):-
 imprime_config(Config):-
 	nl,
 	tamanho(T),
-	imprime_config(Config, 0, T).
+	imprime_config(Config, 0, T),
+	nl.
 
 imprime_config(_, T, T).
 imprime_config(Config, Linha, T):-
@@ -372,13 +392,14 @@ imprime_lista([Cabeca|Cauda], Contador, T):-
 	Contador1 is Contador + 1,
 	write(' '),
 	escreve_digito(Cabeca),
+	write(' '),
 	imprime_lista(Cauda, Contador1, T).
 
 % Escreve o digito dado, substituindo 0 por um espaco
 escreve_digito(N):- N \== 0 -> write(N); write(' ').
 
 % Devolve em L1 os primeiros N elementos da lista, em L2 os restantes.
-separa_N([Cabeca|Cauda], 0, [], [Cabeca|Cauda]).
+separa_N(L, 0, [], L).
 separa_N([Cabeca|Cauda], 1, [Cabeca], Cauda).
 separa_N([Cabeca|Cauda], N, L1, L2):-
 	N > 1,
@@ -392,7 +413,7 @@ remove_N(Lista, N, Resultado):-
 	append(L1, L2, Resultado).	
 
 % Devolve em Elemento o item na posicao N da Lista.
-elemento_N([Cabeca|_], 0, Cabeca).
+elemento_N([Cabeca|_], 0, Cabeca):-!.
 elemento_N([_|Cauda], N, Elemento):-
 	N1 is N - 1,
 	elemento_N(Cauda, N1, Elemento).
