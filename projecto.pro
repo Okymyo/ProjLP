@@ -38,7 +38,7 @@ nome_movimento(d, 'a direita').
 % Verifica se a Peca esta numa dada Posicao num dado Tabuleiro.
 % Podem-se fazer perguntas do genero peca([1, 2, 3], P, 2). a qual a resposta e P = 1.
 peca(Tabuleiro, Posicao, Peca):- peca(Tabuleiro, Posicao, Peca, 0).
-peca([Peca|_], Posicao, Peca, Acc):- Posicao is Acc.
+peca([Peca|_], Posicao, Peca, Posicao).
 peca([_|Cauda], Posicao, Peca, Acc):- 
 	Acc1 is Acc+1,
 	peca(Cauda, Posicao, Peca, Acc1).
@@ -47,13 +47,13 @@ peca([_|Cauda], Posicao, Peca, Acc):-
 substitui([Peca1|Cauda], Peca1, Peca2, [Peca2|Cauda]).
 substitui([Cabeca|Cauda], Peca1, Peca2, CFinal):-
 	substitui(Cauda, Peca1, Peca2, CFinal1),
-	CFinal = [Cabeca|CFinal1].
+	CFinal = [Cabeca|CFinal1], !.
 
-% Verifica se uma configuracao CInical é igual à CFinal com Peca1 trocada por Peca2.
+% Verifica se uma configuracao CInical ï¿½ igual ï¿½ CFinal com Peca1 trocada por Peca2.
 troca(CInicial, Peca1, Peca2, CFinal):-
 	substitui(CInicial, Peca1, tmp, CTemporaria),
 	substitui(CTemporaria, Peca2, Peca1, CTemporaria1),
-	substitui(CTemporaria1, tmp, Peca2, CFinal).
+	substitui(CTemporaria1, tmp, Peca2, CFinal), !.
 
 % Verifica se uma Posicao esta numa dada Linha.
 % As Linhas comecam a contar do 0.
@@ -148,7 +148,7 @@ resolve_cego(CInicial, CFinal):-
 	!,
 	ordem(Ordem),
 	resolve_cego(CInicial, CFinal, Ordem, [CInicial], [], Solucao),
-	imprime_passos(Solucao).
+	imprime_passos(Solucao), !.
 
 resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
 	CInicial == CFinal,
@@ -156,7 +156,7 @@ resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
 
 resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	mov_legal(CInicial, M, Peca, Resultado),
-	not(na_lista(Anteriores, Resultado)),
+	not(member(Resultado, Anteriores)),
 	append([Resultado], Anteriores, Anteriores2),
 	ordem(Ordem),
 	append(Movimentos, [[Peca, M]], Temp),
@@ -164,11 +164,6 @@ resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
-	
-% Verifica se um determinado Item se encontra numa dada lista.
-na_lista([Cabeca|Cauda], Item):-
-	(Cabeca == Item, !);
-	na_lista(Cauda, Item).
 
 % Procura informada utilizando A* e distancia de Manhattan!
 % A Lista Abertos contem todos os Nos que ainda nao foram expandidos.
@@ -190,7 +185,7 @@ resolve_info_m(CInicial, CFinal):-
 	F is G + H,
 	no(CInicial, F, G, H, M, NoInicial),
 	resolve_info_m(CFinal, [NoInicial], [], Solucao),
-	imprime_passos(Solucao).
+	imprime_passos(Solucao), !.
 
 % Escolhe o no da Lista de nos abertos com o menor F, e expande-o.
 resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
@@ -272,13 +267,6 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	linha(PFinal, LinhaF),
 	Temp is Soma + (abs(ColunaI - ColunaF) + abs(LinhaI - LinhaF)),
 	dist_manhattan(CInicial, CFinal, Pecas, Temp, Distancia).
-
-volta_para_tras_camarada(Fechados, [_, _, 0, _, [Peca, Mov]], Solucao).
-volta_para_tras_camarada(Fechados, [C, _, _, _, [Peca, Mov]], Solucao):-
-	jogada(Mov, Offset),
-	OffInverso is -Offset,
-	jogada(M, OffInverso),
-	mov_legal(C, M, _, Resultado).
 	
 	
 % Verificacao de solvabilidade
@@ -348,8 +336,6 @@ imprime_passos([[Peca,M]|Restantes]):-
 	(nl,
 	imprime_passos(Restantes));
 	writeln('.')).
-	
-	escreve_digito(N):- N \== 0 -> write(N); write(' ').
 
 % Dada uma transformacao CInicial -> CFinal, escreve os elementos de ambas as configuracoes separados por '->'	
 imprime_transf(CInicial, CFinal):-
