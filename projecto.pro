@@ -1,3 +1,7 @@
+% Grupo 45
+% 81900 - Nuno Anselmo
+% 82047 - Andre Mendes
+
 % Bons casos de teste:
 % (3x3 - 05 passos) resolve_info_m([1, 2, 3, 4, 5, 6, 7, 8, 0], [1, 2, 3, 7, 4, 5, 8, 0, 6]).
 % (3x3 - 31 passos) resolve_info_m([8, 6, 7, 2, 5, 4, 3, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
@@ -12,8 +16,9 @@
 %
 
 % Tamanho do nosso tabuleiro.
-% E de notar que a local stack e o tempo de computacao para o algoritmo A* cresce consideravelmente (exponencial?)
-% com o tamanho, bem como com o numero de passos necessarios. Testado ate 4x4 com 50 passos necessarios.
+% E de notar que a local stack e o tempo de computacao para o algoritmo A* cresce
+% consideravelmente (exponencial?) com o tamanho, bem como com o numero de passos
+% necessarios. Testado ate 4x4 com 50 passos necessarios sem out of stack.
 tamanho(3).
 
 % Ordem da procura cega.
@@ -196,7 +201,6 @@ resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
 % Expande um dado No, adicionando todos os seus sucessores nao-previamente descobertos a Lista de nos abertos, e o no dado a Lista de nos fechados.
-% expande_no([CFinal, _, G, _, M], _, Fechados, CFinal, Solucao):- volta_para_tras_camarada(Fechados1, [CFinal, G, G, 0, M], Solucao).
 expande_no([C, _, _, _, M], _, _, C, M).
 expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
