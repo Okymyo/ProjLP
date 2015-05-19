@@ -41,7 +41,6 @@ nome_movimento(d, 'a direita').
 %
 
 % Verifica se a Peca esta numa dada Posicao num dado Tabuleiro.
-% Podem-se fazer perguntas do genero peca([1, 2, 3], P, 2). a qual a resposta e P = 1.
 peca(Tabuleiro, Posicao, Peca):- peca(Tabuleiro, Posicao, Peca, 0).
 peca([Peca|_], Posicao, Peca, Posicao).
 peca([_|Cauda], Posicao, Peca, Acc):- 
@@ -54,7 +53,7 @@ substitui([Cabeca|Cauda], Peca1, Peca2, CFinal):-
 	substitui(Cauda, Peca1, Peca2, CFinal1),
 	CFinal = [Cabeca|CFinal1], !.
 
-% Verifica se uma configuracao CInical � igual � CFinal com Peca1 trocada por Peca2.
+% Verifica se uma configuracao CInical e igual a CFinal com Peca1 trocada por Peca2.
 troca(CInicial, Peca1, Peca2, CFinal):-
 	substitui(CInicial, Peca1, tmp, CTemporaria),
 	substitui(CTemporaria, Peca2, Peca1, CTemporaria1),
@@ -62,25 +61,24 @@ troca(CInicial, Peca1, Peca2, CFinal):-
 
 % Verifica se uma Posicao esta numa dada Linha.
 % As Linhas comecam a contar do 0.
-% Podes fazer perguntas do genero linha(2, L). L=0.
 linha(Posicao, Linha):-
 	tamanho(T),
 	Linha is Posicao // T.
 
 % Verifica se uma Posicao esta numa dada Coluna.
 % As Colunas comecam a contar do 0.
-% Pode-se fazer perguntas do genero de coluna(4, C). C=1
 coluna(Posicao, Coluna):-
 	tamanho(T),
 	Coluna is Posicao mod T.
 
 % Verifica se Posicao1 esta na mesma linha que a Posicao2.
-% Este predicado apenas verifica! Nao instancia nada! Nao podes fazer perguntas mesma_linha(1, P).
+% Este predicado apenas verifica! Nao instancia nada!
 mesma_linha(Posicao1, Posicao2):-
 	linha(Posicao1, Linha),
 	linha(Posicao2, Linha).
 
-% Verifica se um movimento J aplicado na peca Peca transforma CInicial em CFinal.
+% Verifica se um movimento Jogada aplicado na peca Peca, se e legal
+% e se transforma CInicial em CFinal.
 mov_legal(CInicial, Jogada, Peca, CFinal):-
 	peca(CInicial, Posicao, Peca),
 	jogada(Jogada, Offset),
