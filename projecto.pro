@@ -5,6 +5,7 @@
 % Bons casos de teste:
 % (3x3 - 05 passos) resolve_info_m([1, 2, 3, 4, 5, 6, 7, 8, 0], [1, 2, 3, 7, 4, 5, 8, 0, 6]).
 % (3x3 - 31 passos) resolve_info_m([8, 6, 7, 2, 5, 4, 3, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
+% (4x4 - 38 passos) resolve_info_m([12, 9, 5, 1, 3, 0, 10, 4, 2, 11, 6, 7, 13, 14, 15, 8], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
 % (4x4 - 50 passos) resolve_info_m([12, 15, 6, 10, 4, 9, 5, 8, 14, 13, 0, 2, 1, 7, 11, 3], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0]).
 % (3x3 -      TRUE) transformacao_possivel([0, 1, 3, 4, 2, 5, 7, 8, 6], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
 % (3x3 -     FALSE) transformacao_possivel([1, 2, 3, 4, 6, 7, 8, 5, 0], [1, 2, 3, 4, 5, 6, 7, 8, 0]).
@@ -18,7 +19,8 @@
 % Tamanho do nosso tabuleiro.
 % E de notar que a local stack e o tempo de computacao para o algoritmo A* cresce
 % consideravelmente (exponencial?) com o tamanho, bem como com o numero de passos
-% necessarios. Testado ate 4x4 com 50 passos necessarios sem out of stack.
+% necessarios. Testado ate 4x4 com 50 passos necessarios sem out of stack, apesar
+% de ter demorado mais de uma hora a completar com 50 passos.
 tamanho(3).
 
 % Ordem da procura cega.
@@ -151,7 +153,8 @@ resolve_cego(CInicial, CFinal):-
 	!,
 	ordem(Ordem),
 	resolve_cego(CInicial, CFinal, Ordem, [CInicial], [], Solucao),
-	imprime_passos(Solucao), !.
+	imprime_passos(Solucao),
+	!.
 
 resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
 	CInicial == CFinal,
@@ -188,17 +191,19 @@ resolve_info_m(CInicial, CFinal):-
 	F is G + H,
 	no(CInicial, F, G, H, M, NoInicial),
 	resolve_info_m(CFinal, [NoInicial], [], Solucao),
-	imprime_passos(Solucao), !.
+	imprime_passos(Solucao),
+	!.
 
 % Escolhe o no da Lista de nos abertos com o menor F, e expande-o.
 resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	menor_F(Abertos, Indice),
 	nth0(Indice, Abertos, No),
-	nth0(Indice, Abertos1, _, Abertos),
+	delete(Abertos, No, Abertos1),
 	!,
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
-% Expande um dado No, adicionando todos os seus sucessores nao-previamente descobertos a Lista de nos abertos, e o no dado a Lista de nos fechados.
+% Expande um dado No, adicionando todos os seus sucessores nao-previamente
+% descobertos a Lista de nos abertos, e o no dado a Lista de nos fechados.
 expande_no([C, _, _, _, M], _, _, C, M).
 expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	sucessores(No, CFinal, Sucessores),
@@ -207,7 +212,7 @@ expande_no(No, Abertos, Fechados, CFinal, Solucao):-
 	!,
 	resolve_info_m(CFinal, Abertos1, Fechados1, Solucao).
 
-filtra_sucessores([], Abertos, _, Abertos).
+filtra_sucessores([], Abertos, _, Abertos):- !.
 filtra_sucessores([No|Restantes], Abertos, Fechados, Resultado):-
 	[Configuracao|_] = No,
 	not(configuracao_calculada(Abertos, Configuracao)),
@@ -229,7 +234,7 @@ sucessores([C, _, G, _, M], CFinal, Sucessores):-
 	ordem(Ordem),
 	sucessores([C, _, G, _, M], CFinal, Sucessores, Ordem).
 
-sucessores(_, _, [], []).
+sucessores(_, _, [], []) :- !.
 sucessores([C, _, G, _, M], CFinal, Sucessores, [Mov|Restantes]):-
 	mov_legal(C, Mov, Peca, Resultado),
 	!,
@@ -246,20 +251,21 @@ sucessores([C, _, G, _, M], CFinal, Sucessores, [_|Restantes]):-
 
 % Dada uma Lista de nos, devolve o indice do no de menor F.
 menor_F(Abertos, Indice):- menor_F(Abertos, 0, _, Indice).
-menor_F([Cabeca|[]], Actual, F, Actual):- no(_, F, _, _, _, Cabeca).
+menor_F([Cabeca|[]], Actual, F, Actual):- !, no(_, F, _, _, _, Cabeca).
 menor_F([Cabeca|Cauda], Actual, F, Indice):-
 	Prox is Actual + 1,
 	menor_F(Cauda, Prox, F_Temp, I_Temp),
 	no(_, F_Actual, _, _, _, Cabeca),
 	(F_Actual =< F_Temp -> (F = F_Actual, Indice = Actual); (F = F_Temp, Indice = I_Temp)).
 
-% Verifica se uma dada configuracao, com f(C) = F, g(C) = G, h(C) = H, e movimentos ate C, gera um determinado no.
+% Verifica se uma dada configuracao, com f(C) = F, g(C) = G, h(C) = H,
+% e movimentos ate C, gera um determinado no.
 no(C, F, G, H, M, [C, F, G, H, M]).
 
 % Calcula a distancia de Manhattan entre duas configuracoes.
 dist_manhattan(CInicial, CFinal, Distancia):- dist_manhattan(CInicial, CFinal, CInicial, 0, Distancia).
-dist_manhattan(_, _, [], Soma, Soma).
-dist_manhattan(CInicial, CFinal, [0|Pecas], Soma, Distancia):- dist_manhattan(CInicial, CFinal, Pecas, Soma, Distancia).
+dist_manhattan(_, _, [], Soma, Soma) :- !.
+dist_manhattan(CInicial, CFinal, [0|Pecas], Soma, Distancia):- !, dist_manhattan(CInicial, CFinal, Pecas, Soma, Distancia).
 dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	peca(CInicial, PInicial, Peca),
 	peca(CFinal, PFinal, Peca),
@@ -272,16 +278,19 @@ dist_manhattan(CInicial, CFinal, [Peca|Pecas], Soma, Distancia):-
 	
 	
 % Verificacao de solvabilidade
-% Dada uma Configuracao Inicial e uma Configuracao Final, indica se e possivel transformar uma na outra.
+% Dada uma Configuracao Inicial e uma Configuracao Final, indica se e
+% possivel transformar uma na outra.
 %
 % Para tamanhos impares:
-% Calcula-se o numero de inversoes necessarias: o numero de pecas que se encontram a frente da Peca X
-% na configuracao inicial mas atras da mesma na configuracao final. Isto e calculado para cada peca.
+% Calcula-se o numero de inversoes necessarias: o numero de pecas que
+% se encontram a frente da Peca X na configuracao inicial mas atras
+% da mesma na configuracao final. Isto e calculado para cada peca.
 % Este valor tem necessariamente de ser par.
 %	
 % Para tamanhos pares:
-% E feito calculando novamente o numero de inversoes necessarias, mas desta vez soma-se a esse resultado
-% a linha em que se encontra a peca 0 (o espaco vazio), e mod2 deste valor tem de ser igual a mod2
+% E feito calculando novamente o numero de inversoes necessarias, mas
+% desta vez soma-se a esse resultado a linha em que se encontra a
+% peca 0 (o espaco vazio), e mod2 deste valor tem de ser igual a mod2
 % da linha em que se encontra o 0 na configuracao final.
 transformacao_possivel(CInicial, CFinal):-
 	inversoes_c(CInicial, CFinal, Inversoes),
@@ -289,21 +298,23 @@ transformacao_possivel(CInicial, CFinal):-
 	!,
 	(T =< 0 -> fail; true),
 	(T mod 2 =:= 1 ->
-	Inversoes mod 2 =:= 0;							% Tamanho impar (3x3, 5x5, ...)
-	(peca(CInicial, PosicaoI, 0),					% Tamanho par (2x2, 4x4, ...)
+	Inversoes mod 2 =:= 0;				% Tamanho impar (3x3, 5x5, ...)
+	(peca(CInicial, PosicaoI, 0),		% Tamanho par (2x2, 4x4, ...)
 	peca(CFinal, PosicaoF, 0),
 	linha(PosicaoI, LinhaI),
 	linha(PosicaoF, LinhaF),
 	(Inversoes + LinhaI) mod 2 =:= LinhaF mod 2)),
 	!.
 
-% Calcula o numero de inversoes entre uma dada Configuracao Inicial e uma Configuracao Final.
+% Calcula o numero de inversoes entre uma dada Configuracao Inicial
+% e uma Configuracao Final.
 inversoes_c(CInicial, CFinal, Total):-
 	tamanho(T),
 	NumPecas is T*T - 1,
-	inversoes_c(CInicial, CFinal, NumPecas, Total).
+	inversoes_c(CInicial, CFinal, NumPecas, Total),
+	!.
 
-inversoes_c(_, _, 0, 0).
+inversoes_c(_, _, 0, 0):- !.
 inversoes_c(CInicial, CFinal, Peca, Total):-
 	ProxPeca is Peca - 1,
 	inversoes_c(CInicial, CFinal, ProxPeca, Temp),
@@ -311,9 +322,9 @@ inversoes_c(CInicial, CFinal, Peca, Total):-
 	Total is Temp + Inversoes.
 
 % Calcula o numero de inversoes associadas a uma determinada Peca.
-inversoes_p([Cabeca], _, Cabeca, 0).
-inversoes_p([Cabeca|_], _, Cabeca, 0).
-inversoes_p([0|Restantes], CFinal, Peca, Inversoes):- inversoes_p(Restantes, CFinal, Peca, Inversoes).
+inversoes_p([Cabeca], _, Cabeca, 0):- !.
+inversoes_p([Cabeca|_], _, Cabeca, 0):- !.
+inversoes_p([0|Restantes], CFinal, Peca, Inversoes):- !, inversoes_p(Restantes, CFinal, Peca, Inversoes).
 inversoes_p([Cabeca|Restantes], CFinal, Peca, Inversoes):-
 	inversoes_p(Restantes, CFinal, Peca, Temp),
 	peca(CFinal, PosicaoCabeca, Cabeca),
@@ -334,19 +345,21 @@ imprime_passos([[Peca,M]|Restantes]):-
 	write(Peca),
 	write(' para '),
 	write(Movimento),
+	!,
 	(Restantes \== [] ->
 	(nl,
 	imprime_passos(Restantes));
 	writeln('.')).
 
-% Dada uma transformacao CInicial -> CFinal, escreve os elementos de ambas as configuracoes separados por '->'	
+% Dada uma transformacao CInicial -> CFinal, escreve os elementos
+% de ambas as configuracoes separados por '->'	
 imprime_transf(CInicial, CFinal):-
 	tamanho(T),
 	writeln('Transformacao desejada:'),
 	imprime_transf(CInicial, CFinal, 0, T).
 
-imprime_transf(_, _, T, T).
-imprime_transf(CInicial, CFinal, 1, T):- imprime_transf(CInicial, CFinal, 1, T, ' -> ').
+imprime_transf(_, _, T, T):- !.
+imprime_transf(CInicial, CFinal, 1, T):- !, imprime_transf(CInicial, CFinal, 1, T, ' -> ').
 imprime_transf(CInicial, CFinal, Linha, T):- imprime_transf(CInicial, CFinal, Linha, T, '    ').
 imprime_transf(CInicial, CFinal, Linha, T, Separador):-
 	Lin is Linha+1,
@@ -365,7 +378,7 @@ imprime_config(Config):-
 	imprime_config(Config, 0, T),
 	nl.
 
-imprime_config(_, T, T).
+imprime_config(_, T, T):- !.
 imprime_config(Config, Linha, T):-
 	Lin is Linha+1,
 	separa_N(Config, T, Config1, Config2),
@@ -374,7 +387,7 @@ imprime_config(Config, Linha, T):-
 	imprime_config(Config2, Lin, T).
 
 % Dada uma lista, escreve os primeiros T elementos separados por um espaco
-imprime_lista(_, T, T).
+imprime_lista(_, T, T):- !.
 imprime_lista([Cabeca|Cauda], Contador, T):-
 	Contador =< T,
 	Contador1 is Contador + 1,
@@ -387,8 +400,8 @@ imprime_lista([Cabeca|Cauda], Contador, T):-
 escreve_digito(N):- N \== 0 -> write(N); write(' ').
 
 % Devolve em L1 os primeiros N elementos da lista, em L2 os restantes.
-separa_N(L, 0, [], L).
-separa_N([Cabeca|Cauda], 1, [Cabeca], Cauda).
+separa_N(L, 0, [], L):- !.
+separa_N([Cabeca|Cauda], 1, [Cabeca], Cauda) :- !.
 separa_N([Cabeca|Cauda], N, L1, L2):-
 	N > 1,
 	N1 is N - 1,
