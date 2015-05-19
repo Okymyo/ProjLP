@@ -21,7 +21,7 @@
 % consideravelmente (exponencial?) com o tamanho, bem como com o numero de passos
 % necessarios. Testado ate 4x4 com 50 passos necessarios sem out of stack, apesar
 % de ter demorado imenso tempo a completar esse teste. Caso o tamanho seja > 3,
-% colunas no output aparecem mal alinhadas (devido aos digitos de 2 caracteres).
+% colunas no output aparecem mal alinhadas (devido aos numeros de 2 digitos).
 tamanho(3).
 
 % Ordem da procura cega.
