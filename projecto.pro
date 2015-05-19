@@ -183,8 +183,8 @@ resolve_info_m(CInicial, CFinal):-
 	imprime_transf(CInicial, CFinal),
 	!,
 	M = [],
+	G = 0,
 	dist_manhattan(CInicial, CFinal, H),
-	numero_elementos(M, G),
 	F is G + H,
 	no(CInicial, F, G, H, M, NoInicial),
 	resolve_info_m(CFinal, [NoInicial], [], Solucao),
@@ -193,8 +193,8 @@ resolve_info_m(CInicial, CFinal):-
 % Escolhe o no da Lista de nos abertos com o menor F, e expande-o.
 resolve_info_m(CFinal, Abertos, Fechados, Solucao):-
 	menor_F(Abertos, Indice),
-	elemento_N(Abertos, Indice, No),
-	remove_N(Abertos, Indice, Abertos1),
+	nth0(Indice, Abertos, No),
+	nth0(Indice, Abertos1, _, Abertos),
 	!,
 	expande_no(No, Abertos1, Fechados, CFinal, Solucao).
 
@@ -394,20 +394,3 @@ separa_N([Cabeca|Cauda], N, L1, L2):-
 	N1 is N - 1,
 	separa_N(Cauda, N1, Temp, L2),
 	append([Cabeca], Temp, L1).
-
-% Devolve em Resultado a Lista sem o elemento de indice N.
-remove_N(Lista, N, Resultado):-
-	separa_N(Lista, N, L1, [_|L2]),
-	append(L1, L2, Resultado).	
-
-% Devolve em Elemento o item na posicao N da Lista.
-elemento_N([Cabeca|_], 0, Cabeca):-!.
-elemento_N([_|Cauda], N, Elemento):-
-	N1 is N - 1,
-	elemento_N(Cauda, N1, Elemento).
-
-% Dada uma lista, calcula o numero de elementos
-numero_elementos([], 0).
-numero_elementos([_|Cauda], Total):-
-	numero_elementos(Cauda, Temp),
-	Total is Temp + 1.
