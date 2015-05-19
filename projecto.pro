@@ -20,7 +20,8 @@
 % E de notar que a local stack e o tempo de computacao para o algoritmo A* cresce
 % consideravelmente (exponencial?) com o tamanho, bem como com o numero de passos
 % necessarios. Testado ate 4x4 com 50 passos necessarios sem out of stack, apesar
-% de ter demorado mais de uma hora a completar com 50 passos.
+% de ter demorado imenso tempo a completar esse teste. Caso o tamanho seja > 3,
+% colunas no output aparecem mal alinhadas (devido aos digitos de 2 caracteres).
 tamanho(3).
 
 % Ordem da procura cega.
@@ -53,13 +54,15 @@ peca([_|Cauda], Posicao, Peca, Acc):-
 substitui([Peca1|Cauda], Peca1, Peca2, [Peca2|Cauda]).
 substitui([Cabeca|Cauda], Peca1, Peca2, CFinal):-
 	substitui(Cauda, Peca1, Peca2, CFinal1),
-	CFinal = [Cabeca|CFinal1], !.
+	CFinal = [Cabeca|CFinal1],
+	!.
 
 % Verifica se uma configuracao CInical e igual a CFinal com Peca1 trocada por Peca2.
 troca(CInicial, Peca1, Peca2, CFinal):-
 	substitui(CInicial, Peca1, tmp, CTemporaria),
 	substitui(CTemporaria, Peca2, Peca1, CTemporaria1),
-	substitui(CTemporaria1, tmp, Peca2, CFinal), !.
+	substitui(CTemporaria1, tmp, Peca2, CFinal),
+	!.
 
 % Verifica se uma Posicao esta numa dada Linha.
 % As Linhas comecam a contar do 0.
@@ -115,6 +118,7 @@ resolve_manual(CInicial, CFinal):-
 resolve_manual(CInicial, CFinal, M):-
 	mov_legal(CInicial, M, _, Resultado),
 	Resultado \= CFinal,
+	!,
 	imprime_config(Resultado),
 	pede_input(M2),
 	resolve_manual(Resultado, CFinal, M2).
@@ -143,7 +147,7 @@ pede_input(M):-
 % 2. Verificar se o movimento e um movimento legal
 %	2.1. Caso nao seja, retirar movimento da lista de movimentos, e correr novamente
 % 3. Verificar se o resultado desse movimento nao foi previamente obtido
-%	3.1. Caso seja, retirar movimento da lista de movimentos, e correr novamente
+%	3.1. Caso tenha sido, retirar movimento da lista de movimentos, e correr novamente
 % 4. Aplicar movimento e guardar qual o movimento realizado e a peca movida
 %	4.1. Caso tenha terminado, listar passos necessarios
 % 5. Restaurar lista de movimentos ao estado inicial, e correr com a nova configuracao
@@ -156,17 +160,15 @@ resolve_cego(CInicial, CFinal):-
 	imprime_passos(Solucao),
 	!.
 
-resolve_cego(CInicial, CFinal, _, _, Movimentos, Solucao):-
-	CInicial == CFinal,
-	Solucao = Movimentos.
-
+resolve_cego(CFinal, CFinal, _, _, Movimentos, Movimentos):- !.
 resolve_cego(CInicial, CFinal, [M|_], Anteriores, Movimentos, Solucao):-
 	mov_legal(CInicial, M, Peca, Resultado),
 	not(member(Resultado, Anteriores)),
 	append([Resultado], Anteriores, Anteriores2),
 	ordem(Ordem),
 	append(Movimentos, [[Peca, M]], Temp),
-	resolve_cego(Resultado, CFinal, Ordem, Anteriores2, Temp, Solucao).
+	resolve_cego(Resultado, CFinal, Ordem, Anteriores2, Temp, Solucao),
+	!.
 
 resolve_cego(CInicial, CFinal, [_|Restantes], Anteriores, Movimentos, Solucao):-
 	resolve_cego(CInicial, CFinal, Restantes, Anteriores, Movimentos, Solucao).
@@ -338,7 +340,7 @@ inversoes_p([Cabeca|Restantes], CFinal, Peca, Inversoes):-
 %
 
 % Imprime os passos realizados, por ordem.
-imprime_passos([]):- write('.'), !.
+imprime_passos([]):- !, write('.').
 imprime_passos([[Peca,M]|Restantes]):-
 	nome_movimento(M, Movimento),
 	write('mova a peca '),
